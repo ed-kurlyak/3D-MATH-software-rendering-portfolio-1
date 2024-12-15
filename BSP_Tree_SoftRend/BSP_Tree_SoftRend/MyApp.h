@@ -1,5 +1,5 @@
 //======================================================================================
-//	Ed Kurlyak 2023 App Class
+//	Ed Kurlyak 2023 Software Rendering
 //======================================================================================
 
 #ifndef _MYAPP_
@@ -9,7 +9,7 @@
 #include <windowsx.h>
 #include "MeshManager.h"
 
-#define APPNAME "BSP Tree Software Rendering"
+#define APPNAME "Software Rendering"
 #define CLASSNAME "Sample"
 
 #define WINDOW_WIDTH 800

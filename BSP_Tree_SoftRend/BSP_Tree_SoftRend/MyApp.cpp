@@ -1,5 +1,5 @@
 //======================================================================================
-//	Ed Kurlyak 2023 App Class
+//	Ed Kurlyak 2023 Software Rendering
 //======================================================================================
 
 #include "MyApp.h"
@@ -28,10 +28,10 @@ LRESULT CALLBACK CMyApp::Static_WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 
 LRESULT CMyApp::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	//проверяем сообщения
+	//РїСЂРѕРІРµСЂСЏРµРј СЃРѕРѕР±С‰РµРЅРёСЏ
 	switch (uMsg)
 	{
-		//мы получили сообщение закрыть приложение
+		//РјС‹ РїРѕР»СѓС‡РёР»Рё СЃРѕРѕР±С‰РµРЅРёРµ Р·Р°РєСЂС‹С‚СЊ РїСЂРёР»РѕР¶РµРЅРёРµ
 		case WM_CLOSE:
 			PostQuitMessage(0);
 			break;
@@ -95,7 +95,7 @@ int CMyApp::Program_Begin(HINSTANCE	hInstance, int nCmdShow)
 	SetForegroundWindow(m_hWnd);
 
 	m_MeshManager.Init_MeshManager(m_hWnd);
-	
+
 	MSG msg;
 
     while (TRUE)

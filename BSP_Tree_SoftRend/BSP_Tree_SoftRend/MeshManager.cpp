@@ -1,84 +1,128 @@
 //======================================================================================
-//	Ed Kurlyak 2023 BSP Tree Software Triangle Rasterization
+//	Ed Kurlyak 2023 Software Rendering
 //======================================================================================
 
 #include "MeshManager.h"
 
 //**********************************
-//Конструктор класса CMeshManager
+//РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР° CMeshManager
 //**********************************
 CMeshManager::CMeshManager()
 {
 }
 
 //**********************************
-//Деструктор класса CMeshManager
+//Р”РµСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР° CMeshManager
 //**********************************
 CMeshManager::~CMeshManager()
 {
-	Delete_BackBuffer();
+	Delete_Backbuffer();
 
-	if (m_LevelTile[0] != NULL)
+	if (m_pLevelTile[0] != NULL)
 	{
-		delete [] m_LevelTile[0];
-		m_LevelTile[0] = NULL;
+		delete [] m_pLevelTile[0];
+		m_pLevelTile[0] = NULL;
 	}
 
-	if (m_LevelTile[1] != NULL)
+	if (m_pLevelTile[1] != NULL)
 	{
-		delete[] m_LevelTile[1];
-		m_LevelTile[1] = NULL;
+		delete[] m_pLevelTile[1];
+		m_pLevelTile[1] = NULL;
 	}
 
-	if (m_LevelTile[2] != NULL)
+	if (m_pLevelTile[2] != NULL)
 	{
-		delete[] m_LevelTile[2];
-		m_LevelTile[2] = NULL;
+		delete[] m_pLevelTile[2];
+		m_pLevelTile[2] = NULL;
 	}
 
-	if(m_LevelTile != NULL)
+	if(m_pLevelTile != NULL)
 	{
-		delete [] m_LevelTile;
-		m_LevelTile = NULL;
+		delete [] m_pLevelTile;
+		m_pLevelTile = NULL;
 	}
-
+	
 	Delete_BSP(m_Root);
 
-	if (m_Root != NULL)
+	if(m_Root != NULL)
 	{
 		delete m_Root;
 		m_Root = NULL;
 	}
-
-	if (m_TexInfo != NULL)
-	{
-		delete [] m_TexInfo;
-		m_TexInfo = NULL;
-	}
 }
 
 //*************************************************
-//Функция нормализует вектор - приводит вектор к
-//единичной длинне
+//Р¤СѓРЅРєС†РёСЏ РЅРѕСЂРјР°Р»РёР·СѓРµС‚ РІРµРєС‚РѕСЂ - РїСЂРёРІРѕРґРёС‚ РІРµРєС‚РѕСЂ Рє
+//РµРґРёРЅРёС‡РЅРѕР№ РґР»РёРЅРЅРµ
 //*************************************************
-vector4 CMeshManager::Vec4_Normalize(vector4& VecIn)
+vector4 CMeshManager::Vec4_Normalize(vector4 &VecIn)
 {
 	vector4 VecOut;
 
-	float Len = sqrtf((VecIn.x * VecIn.x) + (VecIn.y * VecIn.y) + (VecIn.z * VecIn.z));
+	float Len = sqrtf(VecIn.x * VecIn.x + VecIn.y * VecIn.y + VecIn.z * VecIn.z);
 
 	VecOut.x = VecIn.x / Len;
 	VecOut.y = VecIn.y / Len;
 	VecOut.z = VecIn.z / Len;
-	VecOut.w = 1.0f;
+	
+	return VecOut;
+
+}
+
+//**************************************************************
+//Р¤СѓРЅРєС†РёСЏ РІС‹С‡РёСЃР»СЏРµС‚ cross product РґРІСѓС… РІРµРєС‚РѕСЂРѕРІ
+//**************************************************************
+vector4 CMeshManager::Vec4_Cross(vector4 &VecIn1, vector4 &VecIn2)
+{
+	vector4 VecOut;
+
+	VecOut.x = VecIn1.y * VecIn2.z - VecIn1.z * VecIn2.y;
+	VecOut.y = VecIn1.z * VecIn2.x - VecIn1.x * VecIn2.z;
+	VecOut.z = VecIn1.x * VecIn2.y - VecIn1.y * VecIn2.x;
 
 	return VecOut;
 }
 
 //**************************************************************
-//Функция возвращает матрицу поворота вокруг заданого вектора
+//Р¤СѓРЅРєС†РёСЏ РІС‹С‡РёСЃР»СЏРµС‚ СЃРєР°Р»СЏСЂРЅРѕРµ РїСЂРѕРёР·РІРµРґРµРЅРёРµ РґРІСѓС… РІРµРєС‚РѕСЂРѕРІ
 //**************************************************************
-matrix4x4 CMeshManager::Matrix_Rotation_Axis(vector4 &VecIn, float Angle)
+float CMeshManager::Vec4_Dot(vector4 &VecIn1, vector4 &VecIn2)
+{
+	return VecIn1.x*VecIn2.x + VecIn1.y*VecIn2.y + VecIn1.z* VecIn2.z;
+}
+
+//**************************************************************
+//Р¤СѓРЅРєС†РёСЏ РІС‹С‡РёСЃР»СЏРµС‚ СЃСѓРјРјСѓ РґРІСѓС… РІРµРєС‚РѕСЂРѕРІ
+//**************************************************************
+vector4 CMeshManager::Vec4_Add(vector4 &VecIn1, vector4 &VecIn2)
+{
+	vector4 VecOut;
+
+	VecOut.x = VecIn1.x + VecIn2.x;
+	VecOut.y = VecIn1.y + VecIn2.y;
+	VecOut.z = VecIn1.z + VecIn2.z;
+
+	return VecOut;
+}
+
+//**************************************************************
+//Р¤СѓРЅРєС†РёСЏ РјР°СЃС€С‚Р°Р±РёСЂСѓРµС‚ РІРµРєС‚РѕСЂ
+//**************************************************************
+vector4 CMeshManager::Vec4_Scale(vector4 &VecIn, float ValIn)
+{
+	vector4 VecOut;
+
+	VecOut.x = VecIn.x * ValIn;
+	VecOut.y = VecIn.y * ValIn;
+	VecOut.z = VecIn.z * ValIn;
+
+	return VecOut;
+}
+
+//**************************************************************
+//Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ РјР°С‚СЂРёС†Сѓ РїРѕРІРѕСЂРѕС‚Р° РІРѕРєСЂСѓРі Р·Р°РґР°РЅРѕРіРѕ РІРµРєС‚РѕСЂР°
+//**************************************************************
+void CMeshManager::Matrix_Rotation_Axis(vector4 &VecIn, float Angle, matrix4x4 &MatOut)
 {
 	float x = VecIn.x;
 	float y = VecIn.y;
@@ -86,7 +130,7 @@ matrix4x4 CMeshManager::Matrix_Rotation_Axis(vector4 &VecIn, float Angle)
 	
 	float s = sinf(Angle);
 	float c = cosf(Angle);
-	float omc = (float)1.0f - c;
+	float omc = 1.0f - c;
 
 	float xomc = x * omc;
 	float yomc = y * omc;
@@ -104,31 +148,49 @@ matrix4x4 CMeshManager::Matrix_Rotation_Axis(vector4 &VecIn, float Angle)
 	float ys = y * s;
 	float zs = z * s;
 
-	return matrix4x4(xxomc + c,  xyomc + zs, xzomc - ys, 0.0f,
+	MatOut = matrix4x4 (xxomc + c,  xyomc + zs, xzomc - ys, 0.0f,
 		xyomc - zs, yyomc + c,  yzomc + xs, 0.0f,
 		xzomc + ys, yzomc - xs, zzomc + c, 0.0f,
 		0.0f ,0.0f, 0.0f, 1.0f);
 }
 
+//*****************************************************
+//Р¤СѓРЅРєС†РёСЏ СѓРјРЅРѕР¶РµРЅРёРµ РІРµРєС‚РѕСЂР° РЅР° РјР°С‚СЂРёС†Сѓ
+//*****************************************************
+vector4 CMeshManager::Vec4_Mat4x4_Mul(vector4 &VecIn, matrix4x4 & MatIn)
+{
+	vector4 VecOut;
+
+	VecOut.x = VecIn.x * MatIn.Mat[0][0] + VecIn.y * MatIn.Mat[1][0] + VecIn.z * MatIn.Mat[2][0] + MatIn.Mat[3][0];
+	VecOut.y = VecIn.x * MatIn.Mat[0][1] + VecIn.y * MatIn.Mat[1][1] + VecIn.z * MatIn.Mat[2][1] + MatIn.Mat[3][1];
+	VecOut.z = VecIn.x * MatIn.Mat[0][2] + VecIn.y * MatIn.Mat[1][2] + VecIn.z * MatIn.Mat[2][2] + MatIn.Mat[3][2];
+	VecOut.w = VecIn.x * MatIn.Mat[0][3] + VecIn.y * MatIn.Mat[1][3] + VecIn.z * MatIn.Mat[2][3] + MatIn.Mat[3][3];
+
+	VecOut.tu = VecIn.tu;
+	VecOut.tv = VecIn.tv;
+
+	return VecOut;
+
+}
+
 //********************************************
-//Функция возвращает следующий треугольник
-//из списка треугольников
+//Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ СЃР»РµРґСѓСЋС‰РёР№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє
+//РёР· СЃРїРёСЃРєР° С‚СЂРµСѓРіРѕР»СЊРЅРёРєРѕРІ
 //********************************************
 polygon* list::Get_From_List ()
 {
-	polygon *Poly;
-
-	Poly = &PolyList[PolygonCurr];
+	polygon *plg;
+	plg = &PolyList[PolygonCurr];
 	PolygonCurr++;
 	if(PolygonCurr > PolygonCount)
 		return NULL;
 
-	return Poly;
+	return plg;
 }
 
 //****************************************************
-//Функция проверяет пустой ли список стреугольников
-//или нет
+//Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРµСЂСЏРµС‚ РїСѓСЃС‚РѕР№ Р»Рё СЃРїРёСЃРѕРє СЃС‚СЂРµСѓРіРѕР»СЊРЅРёРєРѕРІ
+//РёР»Рё РЅРµС‚
 //****************************************************
 bool list::Is_Empty_List ()
 {
@@ -139,7 +201,7 @@ bool list::Is_Empty_List ()
 }
 
 //*****************************************
-//Функция добавляет треугольник в список
+//Р¤СѓРЅРєС†РёСЏ РґРѕР±Р°РІР»СЏРµС‚ С‚СЂРµСѓРіРѕР»СЊРЅРёРє РІ СЃРїРёСЃРѕРє
 //*****************************************
 void list::Add_To_List(polygon *p)
 {
@@ -154,27 +216,29 @@ void list::Add_To_List(polygon *p)
 		PolyList=(polygon*)realloc(PolyList, PolygonCount*sizeof(polygon));
 	}
 
-	for(UINT i=0;i<3;i++)
+	for(int i=0;i<3;i++)
 		PolyList[PolygonCount-1].Vertex[i] = p->Vertex[i];
 
 	PolyList[PolygonCount-1].TexID = p->TexID;
+
+	
 }
 
 //***************************************************
-//Функция возвращает цифровой индекс в зависимости
-//от имени файла текстуры
+//Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ С†РёС„СЂРѕРІРѕР№ РёРЅРґРµРєСЃ РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё
+//РѕС‚ РёРјРµРЅРё С„Р°Р№Р»Р° С‚РµРєСЃС‚СѓСЂС‹
 //***************************************************
-int CMeshManager::Get_TextureID(char * TexName)
+int CMeshManager::Get_TextureID(char * szFilename)
 {
-	if(!_strcmpi(TexName, "texture1.bmp\n"))
+	if(!_strcmpi(szFilename, "texture1.bmp\n")) //С‚РµРєСЃС‚СѓСЂР° РїРѕР»Р°
 	{
 		return 0;
 	}
-	else if(!_strcmpi(TexName, "texture2.bmp\n"))
+	else if(!_strcmpi(szFilename, "texture2.bmp\n")) //С‚РµРєСЃС‚СѓСЂР° СЃС‚РµРЅ
 	{
 		return 1;
 	}
-	else if(!_strcmpi(TexName, "texture3.bmp\n"))
+	else if(!_strcmpi(szFilename, "texture3.bmp\n")) //С‚РµРєСЃС‚СѓСЂР° РїРѕС‚РѕР»РєР°
 	{
 		return 2;
 	}
@@ -183,7 +247,7 @@ int CMeshManager::Get_TextureID(char * TexName)
 }
 
 //*******************************
-//Функция инициализирует сцену
+//Р¤СѓРЅРєС†РёСЏ РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ СЃС†РµРЅСѓ
 //*******************************
 void CMeshManager::Init_MeshManager(HWND hWnd)
 {
@@ -193,65 +257,78 @@ void CMeshManager::Init_MeshManager(HWND hWnd)
 
 	Timer_Start();
 
-	Create_BackBuffer();
+    RECT Rc;
+    ::GetClientRect( m_hWnd, &Rc );
 
-	//ширина текстуры 256, высота текстуры 256
-	//256 * 256 = 65536, три цвета r,g,b
-	//то есть массив каждой текстуры
-	//содержит 256 * 256 * 3 элементов
-	//всего на сцене у нас 3 текстуры
-	//текстура пола, стен, потолка
-	m_LevelTile = new unsigned char *[3];
+	m_BackLpitch = Rc.right * 4;
+    
+	m_ViewWidth  = Rc.right - Rc.left;
+    m_ViewHeight = Rc.bottom - Rc.top;
 
-	//информация для каждой текстуры
-	//ширина и высота так как текстуры
-	//могут быть разного размера
-	m_TexInfo = new texture_info[3];
+	Create_Backbuffer();
 
-	//загружаем текстуру пола индекс массива 0
+	//С€РёСЂРёРЅР° С‚РµРєСЃС‚СѓСЂС‹ 256, РІС‹СЃРѕС‚Р° С‚РµРєСЃС‚СѓСЂС‹ 256
+	//256 * 256 = 65536, С‚СЂРё С†РІРµС‚Р° r,g,b
+	//С‚Рѕ РµСЃС‚СЊ РјР°СЃСЃРёРІ РєР°Р¶РґРѕР№ С‚РµРєСЃС‚СѓСЂС‹
+	//СЃРѕРґРµСЂР¶РёС‚ 256 * 256 * 3 СЌР»РµРјРµРЅС‚РѕРІ
+	//РІСЃРµРіРѕ РЅР° СЃС†РµРЅРµ Сѓ РЅР°СЃ 3 С‚РµРєСЃС‚СѓСЂС‹
+	//С‚РµРєСЃС‚СѓСЂР° РїРѕР»Р°, СЃС‚РµРЅ, РїРѕС‚РѕР»РєР°
+	m_pLevelTile = new unsigned char *[3];
+
 	Load_BMP((char*)"texture1.bmp", 0);
-	//загружаем текстуру стен индекс массива 1
 	Load_BMP((char*)"texture2.bmp", 1);
-	//загружаем текстуру потолка индекс массива 2
 	Load_BMP((char*)"texture3.bmp", 2);
 
-	//загружаем вершины и имена текстур из файла
-	FILE * Fp;
-	fopen_s(&Fp,"level.txt", "rt");
+	FILE *f;
+	fopen_s(&f,"level.txt", "rt");
 
 	char Buffer[1024];
-	fgets(Buffer, 1024, Fp);
+	fgets(Buffer, 1024, f);
 
 	int Size;
 	sscanf_s(Buffer,"%d",&Size);
+
+	polygon Poly;
 	
-	while(!feof(Fp))
+	while(!feof(f))
 	{
 		vector4 *VecPos;
 		VecPos = new vector4[4];
 		
-		//читаем из файла 4 вершины полигона
-		//из котрых сложим 2 треугольника
-		fgets(Buffer, 1024, Fp);
+		fgets(Buffer, 1024, f);
 		sscanf_s(Buffer,"%f %f %f %f %f",&VecPos[0].x, &VecPos[0].y, &VecPos[0].z, &VecPos[0].tu, &VecPos[0].tv);
 	
-		fgets(Buffer, 1024, Fp);
+		fgets(Buffer, 1024, f);
 		sscanf_s(Buffer,"%f %f %f %f %f",&VecPos[1].x, &VecPos[1].y, &VecPos[1].z, &VecPos[1].tu, &VecPos[1].tv);
 	
-		fgets(Buffer, 1024, Fp);
+		fgets(Buffer, 1024, f);
 		sscanf_s(Buffer,"%f %f %f %f %f",&VecPos[2].x, &VecPos[2].y, &VecPos[2].z, &VecPos[2].tu, &VecPos[2].tv);
 	
-		fgets(Buffer, 1024, Fp);
+		fgets(Buffer, 1024, f);
 		sscanf_s(Buffer,"%f %f %f %f %f",&VecPos[3].x, &VecPos[3].y, &VecPos[3].z, &VecPos[3].tu, &VecPos[3].tv);
 						
-		//читаем из файла имя текстуры этого полигона
-		fgets(Buffer, 1024, Fp);
-		
-		//в зависимости от имени текстуры
-		//получаем ее индекс в массиве текстур
-		int TexId = Get_TextureID(Buffer);
+		fgets(Buffer, 1024, f);
+						
+		char TexFileName[256];
+		strcpy_s(TexFileName,256,Buffer);
+		int TexId = Get_TextureID(TexFileName);
 
-		polygon Poly;
+		//С€РёСЂРёРЅР° Рё РІС‹СЃРѕС‚Р° РІСЃРµС… С‚РµРєСЃС‚СѓСЂ 256С…256 РїРёРєСЃРµР»РµР№
+		//РїРѕС‡РµРјСѓ -1 СЂР°Р·РјРµСЂ С‚РµРєСЃС‚СѓСЂС‹ СѓС‡Р°СЃС‚РІСѓРµС‚ РІ С„РѕСЂРјРёСЂРѕРІР°РЅРёРё
+		//РёРЅРґРµРєСЃР° РјР°СЃСЃРёРІР° РїРѕ РєРѕС‚РѕСЂРѕРјСѓ РёР·РІР»РµРєР°СЋС‚СЃСЏ РїРёРєСЃРµР»Рё РёР· С‚РµРєСЃС‚СѓСЂС‹
+		//РёРЅРґРµРєСЃ РјР°СЃСЃРёРІР° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0 Рё РјРµРЅСЊС€Рµ СЂР°РІРЅРѕ 255
+		//С‚.Рµ. СЂР°Р·РјРµСЂ СЃР°РјРѕР№ С‚РµРєСЃС‚СѓСЂС‹ 256С…256
+		VecPos[0].tu *= m_TextureWidth - 1;
+		VecPos[0].tv *= m_TextureHeight - 1;
+		
+		VecPos[1].tu *= m_TextureWidth - 1;
+		VecPos[1].tv *= m_TextureHeight - 1;
+
+		VecPos[2].tu *= m_TextureWidth - 1;
+		VecPos[2].tv *= m_TextureHeight - 1;
+
+		VecPos[3].tu *= m_TextureWidth - 1;
+		VecPos[3].tv *= m_TextureHeight - 1;
 
 		Poly.Vertex[0] = VecPos[0];
 		Poly.Vertex[1] = VecPos[1];
@@ -263,7 +340,8 @@ void CMeshManager::Init_MeshManager(HWND hWnd)
 
 		Poly.TexID = TexId;
 
-		//добавляем треугольник в список
+		//РёР· С„Р°Р№Р»Р° РїСЂРѕС‡РёС‚Р°Р»Рё 4 РІРµСЂС€РёРЅС‹
+		//РґРѕР±Р°РІР»СЏРµРј РІ СЃРїРёСЃРѕРє РїРµСЂРІС‹Р№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє
 		m_Polygons.Add_To_List(&Poly);
 
 		Poly.Vertex[0] = VecPos[0];
@@ -276,332 +354,438 @@ void CMeshManager::Init_MeshManager(HWND hWnd)
 
 		Poly.TexID = TexId;
 		
-		//добавляем треугольник в список
+		//РёР· С„Р°Р№Р»Р° РїСЂРѕС‡РёС‚Р°Р»Рё 4 РІРµСЂС€РёРЅС‹
+		//РґРѕР±Р°РІР»СЏРµРј РІ СЃРїРёСЃРѕРє РІС‚РѕСЂРѕР№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє
 		m_Polygons.Add_To_List(&Poly);
 
 		delete[] VecPos;
 	}
 
-	fclose(Fp);
+	fclose(f);
 
-	//инициализируем векторы камеры
-	m_VecUp = vector4( 0.0, 1.0, 0.0);
-	m_VecLook = vector4( 0.0, 0.0, 1.0);
+	m_VecCamUp = vector4( 0.0, 1.0, 0.0);
+	m_VecCamLook = vector4( 0.0, 0.0, 1.0);
 
-	if(m_VecLook.z > 0)
+	//РєР°РјРµСЂР° РјРѕР¶РµС‚ СЃРјРѕС‚СЂРµС‚СЊ РІ РЅР°РїСЂР°РІР»РµРЅРёРё +Z Рё -Z
+	if(m_VecCamLook.z > 0)
 	{
-		m_VecRight = vector4( 1.0, 0.0, 0.0 );
+		m_VecCamRight = vector4( 1.0, 0.0, 0.0 );
 	}
 
-	if(m_VecLook.z < 0)
+	if(m_VecCamLook.z < 0)
 	{
-		m_VecRight = vector4( -1.0, 0.0, 0.0 );
+		m_VecCamRight = vector4( -1.0, 0.0, 0.0 );
 	}
 
-	m_VecPos = vector4( 25.0f, 5.0f, 25.0f);
+	m_VecCamPos = vector4( 25.0f, 5.0f, 25.0f);
 	
-    //Build the BSP Tree from the Root node
+    //РЎС‚СЂРѕРёРј BSP РґРµСЂРµРІРѕ
 	m_Root = NULL;
 	m_Root = new BSP_tree;
     Build_BSP_Tree(m_Root, m_Polygons);
 }
 
-//********************************
-//Функция создает задний буфер
-//********************************
-void CMeshManager::Create_BackBuffer()
-{
-	RECT Rc;
-	::GetClientRect(m_hWnd, &Rc);
-
-	m_BackLpitch = Rc.right * 4;
-
-	m_ViewWidth = Rc.right - Rc.left;
-	m_ViewHeight = Rc.bottom - Rc.top;
-
-	DWORD Size = m_ViewWidth * (BITS_PER_PIXEL >> 3) * m_ViewHeight;
-
-	m_Data = (LPBYTE)malloc(Size * sizeof(BYTE));
-	m_DataTemp = (LPBYTE)malloc(Size * sizeof(BYTE));
-
-	memset(&m_Bih, 0, sizeof(BITMAPINFOHEADER));
-	m_Bih.biSize = sizeof(BITMAPINFOHEADER);
-	m_Bih.biWidth = m_ViewWidth;
-	m_Bih.biHeight = m_ViewHeight;
-	m_Bih.biPlanes = 1;
-	m_Bih.biBitCount = BITS_PER_PIXEL;
-	m_Bih.biCompression = BI_RGB;
-	m_Bih.biSizeImage = Size;
-
-	m_hDD = DrawDibOpen();
-
-}
-
-//********************************
-//Функция очищает задний буфер
-//********************************
-void CMeshManager::Clear_BackBuffer()
-{
-	for (UINT h = 0; h < m_ViewHeight; h++)
-	{
-		for (UINT w = 0; w < m_ViewWidth; w++)
-		{
-			int Index = h * 4 * m_ViewWidth + w * 4;
-
-			m_Data[Index + 0] = (BYTE)(255.0 * 0.3f); // blue
-			m_Data[Index + 1] = (BYTE)(255.0 * 0.125f); // green
-			m_Data[Index + 2] = 0; // red
-			m_Data[Index + 3] = 0;
-		}
-	}
-}
-
-//****************************************
-//Функция выводит задний буфер на экран
-//****************************************
-void CMeshManager::Present_BackBuffer()
-{
-	//переворачиваем задний буфер
-	for (UINT h = 0; h < m_ViewHeight; h++ )
-	{
-		for (UINT w = 0; w < m_ViewWidth; w++)
-		{
-			int Index = h * 4 * m_ViewWidth + w * 4;
-
-			BYTE b = m_Data[Index]; // blue
-			BYTE g = m_Data[Index + 1]; // green
-			BYTE r = m_Data[Index + 2]; // red
-			
-
-			int IndexTemp = (m_ViewHeight - 1 - h) * 4 * m_ViewWidth + w * 4;
-			m_DataTemp[IndexTemp] = b;
-			m_DataTemp[IndexTemp + 1] = g;
-			m_DataTemp[IndexTemp + 2] = r;
-			m_DataTemp[IndexTemp + 3] = 0;
-		}
-	}
-
-	//выводим задний буфер на экран
-	HDC hDC = GetDC(m_hWnd);
-	DrawDibDraw(m_hDD, hDC, 0, 0, m_ViewWidth, m_ViewHeight, &m_Bih, m_DataTemp, 0, 0, m_ViewWidth, m_ViewHeight, 0);
-	ReleaseDC(m_hWnd, hDC);
-}
-
-//********************************
-//Функция удаляет задний буфер
-//********************************
-void CMeshManager::Delete_BackBuffer()
-{
-	DrawDibClose(m_hDD);
-
-	free(m_Data);
-	m_Data = NULL;
-
-	free(m_DataTemp);
-	m_DataTemp = NULL;
-}
-
 //**********************************************
-//Функция камеры, функция следит за нажатиями
-//на клавиши для перемещения по сцене и 
-//возвращает матрицу вида
+//Р¤СѓРЅРєС†РёСЏ РєР°РјРµСЂС‹, С„СѓРЅРєС†РёСЏ СЃР»РµРґРёС‚ Р·Р° РЅР°Р¶Р°С‚РёСЏРјРё
+//РЅР° РєР»Р°РІРёС€Рё РґР»СЏ РїРµСЂРµРјРµС‰РµРЅРёСЏ РїРѕ СЃС†РµРЅРµ Рё 
+//РІРѕР·РІСЂР°С‰Р°РµС‚ РјР°С‚СЂРёС†Сѓ РІРёРґР°
 //**********************************************
-matrix4x4 CMeshManager::Get_View_Matrix()
+void CMeshManager::Get_View_Matrix(matrix4x4 &MatOut)
 {
 	float Time = Get_Elapsed_Time();
+
+	UINT ScreenWidth = m_ViewWidth;
+	UINT ScreenHeight = m_ViewHeight;
 
 	POINT MousePos;
 	GetCursorPos(&MousePos);
 
-	SetCursorPos(m_ViewWidth/2, m_ViewHeight/2);
+	SetCursorPos(ScreenWidth/2, ScreenHeight/2);
     
-	int DeltaY=m_ViewHeight/2-MousePos.y;
-	int DeltaX = m_ViewWidth / 2 - MousePos.x;
+	int DeltaX=ScreenWidth/2-MousePos.x;
+	int DeltaY=ScreenHeight/2-MousePos.y;
 
-	//для движения камеры вверх-вниз
-	//изменить на значение отличное от нуля
-	//что бы камера двигалась вверх-вниз
-	float RotationScalerY = 0.0f;
-	//для движения камеры влево-вправо
-	float RotationScalerX = 0.2f;
-	
-	//движение камеры вверх-вниз
-	if(DeltaY<0) RotationScalerY = RotationScalerY;
-	else if(DeltaY>0) RotationScalerY = -RotationScalerY;
-	else if(DeltaY==0) RotationScalerY = 0;
+	//С‡С‚Рѕ Р±С‹ РїРµСЂРµРјРµС‰Р°С‚СЊ РєР°РјРµСЂСѓ РІРµСЂС‚РёРєР°Р»СЊРЅРѕ
+	//РїРѕСЃС‚Р°РІС‚Рµ Р·РЅР°С‡РµРЅРёРµ m_RotationScalerY
+	//Р±РѕР»СЊС€Рµ РЅСѓР»СЏ
+	//float m_RotationScalerY = 0.1f;
+	float m_RotationScalerY = 0.0f;
+	float m_RotationScalerX = 0.075f;
 
-	matrix4x4 MatRotRight = Matrix_Rotation_Axis(m_VecRight, RotationScalerY);
-	
-	//векторы в функцию передаем по адресу
-	//не по значению поэтому необходимы
-	//временные векторы
-	vector4 VecTemp0, VecTemp1, VecTemp2;
+	//СЂРµР°РєС†РёСЏ РЅР° РґРІРёР¶РµРЅРёРµ РјС‹С€СЊСЋ
 
-	m_VecRight = Vec4_Mat4x4_Mul(m_VecRight, MatRotRight);
-	m_VecUp = Vec4_Mat4x4_Mul(m_VecUp, MatRotRight);
-	m_VecLook = Vec4_Mat4x4_Mul(m_VecLook, MatRotRight);
+	//РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ СЃРјРµС‰РµРЅРёРµ РєР°РјРµСЂС‹ (РІРѕРєСЂСѓРі РѕСЃРё X)
+	if(DeltaY<0) m_RotationScalerY = m_RotationScalerY;
+	else if(DeltaY>0) m_RotationScalerY = -m_RotationScalerY;
+	else if(DeltaY==0) m_RotationScalerY = 0;
+
+	matrix4x4 MatRotRight;
+	Matrix_Rotation_Axis(m_VecCamRight , m_RotationScalerY, MatRotRight);
 	
+	m_VecCamRight = Vec4_Mat4x4_Mul(m_VecCamRight, MatRotRight);
+	m_VecCamUp = Vec4_Mat4x4_Mul(m_VecCamUp, MatRotRight);
+	m_VecCamLook = Vec4_Mat4x4_Mul(m_VecCamLook, MatRotRight);
 	
-	//движение камеры влево- вправо
-	if(DeltaX<0) RotationScalerX = RotationScalerX;
-	else if(DeltaX>0) RotationScalerX = -RotationScalerX;
-	else if(DeltaX==0) RotationScalerX = 0;
+	//РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅРѕРµ СЃРјРµС‰РµРЅРёРµ РєР°РјРµСЂС‹ (РІРѕРєСЂСѓРі РѕСЃРё Y)
+	if(DeltaX<0) m_RotationScalerX = m_RotationScalerX;
+	else if(DeltaX>0) m_RotationScalerX = -m_RotationScalerX;
+	else if(DeltaX==0) m_RotationScalerX = 0;
 
 	vector4 VecUpTemp = vector4( 0.0f, 1.0f, 0.0f );
-	matrix4x4 MatRotUp = Matrix_Rotation_Axis(VecUpTemp, RotationScalerX);
+	matrix4x4 MatRotUp;
+	Matrix_Rotation_Axis(VecUpTemp , m_RotationScalerX, MatRotUp);
 	
-	m_VecRight = Vec4_Mat4x4_Mul(m_VecRight, MatRotUp);
-	m_VecUp = Vec4_Mat4x4_Mul(m_VecUp, MatRotUp);
-	m_VecLook = Vec4_Mat4x4_Mul(m_VecLook, MatRotUp);
+	m_VecCamRight = Vec4_Mat4x4_Mul(m_VecCamRight, MatRotUp);
+	m_VecCamUp = Vec4_Mat4x4_Mul(m_VecCamUp, MatRotUp);
+	m_VecCamLook = Vec4_Mat4x4_Mul(m_VecCamLook, MatRotUp);
 	
-	//движение камеры
-	//вперед, назад, шаг влево, шаг вправо
+	//СЂРµР°РєС†РёСЏ РЅР° РєР»Р°РІРёС€Рё W,S,A,D
 	float RatioMove = 50;
-	vector4 VecTemp = vector4(0,0,0);;
 	vector4 VecAccel = vector4(0,0,0);
 	
 	if(GetAsyncKeyState('W')& 0xFF00) 
 	{
-		VecTemp = vector4(m_VecLook.x,0, m_VecLook.z);
-		VecTemp = VecTemp * RatioMove;
-		VecAccel += VecTemp * Time;
+		vector4 VecTemp = vector4(m_VecCamLook.x,0,m_VecCamLook.z);
+
+		VecTemp = Vec4_Scale(VecTemp, RatioMove);
+		VecAccel += Vec4_Scale(VecTemp, Time);
 	}
 
 	if(GetAsyncKeyState('S')& 0xFF00) 
 	{
-		VecTemp = vector4(m_VecLook.x,0, m_VecLook.z);
-		VecTemp = VecTemp * (-RatioMove);
-		VecAccel += VecTemp * Time;
+		vector4 VecTemp = vector4(m_VecCamLook.x,0,m_VecCamLook.z);
+
+		VecTemp = Vec4_Scale(VecTemp, -RatioMove);
+		VecAccel += Vec4_Scale(VecTemp, Time);
 	}
 
 	if(GetAsyncKeyState('D')& 0xFF00) 
 	{
-		VecTemp = vector4(m_VecRight.x,0, m_VecRight.z);
-		VecTemp = VecTemp * RatioMove;
-		VecAccel += VecTemp * Time;
+		vector4 VecTemp = vector4(m_VecCamRight.x,0,m_VecCamRight.z);
+
+		VecTemp = Vec4_Scale(VecTemp, RatioMove);
+		VecAccel += Vec4_Scale(VecTemp, Time);
 	}
 
 	if(GetAsyncKeyState('A')& 0xFF00) 
 	{
-		VecTemp = vector4(m_VecRight.x,0, m_VecRight.z);
-		VecTemp = VecTemp * (-RatioMove);
-		VecAccel += VecTemp * Time;
+		vector4 VecTemp = vector4(m_VecCamRight.x,0,m_VecCamRight.z);
+		
+		VecTemp = Vec4_Scale(VecTemp, -RatioMove);
+		VecAccel += Vec4_Scale(VecTemp, Time);
 	}
 
-	m_VecPos += VecAccel;
+	m_VecCamPos = Vec4_Add(m_VecCamPos,VecAccel);
 
-	//рассчитываем матрицу вида
-	m_VecLook = Vec4_Normalize(m_VecLook);
-	m_VecUp = Vec4_Cross(m_VecLook, m_VecRight);
-	m_VecUp = Vec4_Normalize(m_VecUp);
-	m_VecRight = Vec4_Cross(m_VecUp, m_VecLook);
-	m_VecRight = Vec4_Normalize(m_VecRight);
+	m_VecCamLook = Vec4_Normalize(m_VecCamLook);
+	m_VecCamUp = Vec4_Cross(m_VecCamLook,m_VecCamRight);
+	m_VecCamUp = Vec4_Normalize(m_VecCamUp);
+	m_VecCamRight = Vec4_Cross(m_VecCamUp,m_VecCamLook);
+	m_VecCamRight = Vec4_Normalize(m_VecCamRight);
 
-	//vector dot
-	float xp = -Vec4_Dot(m_VecPos, m_VecRight);
-	float yp = -Vec4_Dot(m_VecPos, m_VecUp);
-	float zp = -Vec4_Dot(m_VecPos, m_VecLook);
+	float xp = -Vec4_Dot(m_VecCamPos, m_VecCamRight);
+	float yp = -Vec4_Dot(m_VecCamPos, m_VecCamUp);
+	float zp = -Vec4_Dot(m_VecCamPos, m_VecCamLook);
 
-	matrix4x4 MatView = matrix4x4(
-		m_VecRight.x, m_VecUp.x, m_VecLook.x, 0,
-		m_VecRight.y, m_VecUp.y, m_VecLook.y, 0,
-		m_VecRight.z, m_VecUp.z, m_VecLook.z, 0,
-		xp,		  yp,	 zp, 1 );
+	MatOut = matrix4x4(
+        m_VecCamRight.x, m_VecCamUp.x, m_VecCamLook.x, 0,
+		m_VecCamRight.y, m_VecCamUp.y, m_VecCamLook.y, 0,
+		m_VecCamRight.z, m_VecCamUp.z, m_VecCamLook.z, 0,
+		xp,		  yp,	 zp,	  1 );
+}
 
-	return MatView;
+//***************************************************
+//Р¤СѓРЅРєС†РёСЏ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ СЂР°СЃСЃРµС‡РµРЅРёСЏ С‚СЂРµСѓРіРѕР»СЊРЅРёРєР°
+//Р±Р»РёР¶РЅРµР№ РїР»РѕСЃРєРѕСЃС‚СЊСЋ РѕС‚СЃРµС‡РµРЅРёСЏ
+//***************************************************
+vector4 CMeshManager::Calc_Edge(vector4 &VecIn1, vector4 &VecIn2)
+{
+	//РІРµСЂС€РёРЅР° РїРµСЂРµРґ РїРµСЂРµРґРЅРµР№ РїР»РѕСЃРєРѕСЃС‚СЊСЋ v1
+	//РІРµСЂС€РёРЅР° Р·Р° РїРµСЂРµРґРЅРµР№ РїСЂРѕСЃРєРѕСЃС‚СЊСЋ v2
+
+	vector4 VecOut;
+
+	float d = (m_ZNear - VecIn1.z) / (VecIn2.z - VecIn1.z);
+
+    VecOut.x = VecIn1.x + d * (VecIn2.x - VecIn1.x);
+    VecOut.y = VecIn1.y + d * (VecIn2.y - VecIn1.y);
+    VecOut.z = VecIn1.z + d * (VecIn2.z - VecIn1.z);
+	VecOut.w = VecIn1.w + d * (VecIn2.w - VecIn1.w);
+
+	//VecOut.z = m_ZNear;
+	//VecOut.w = m_ZNear;
+
+	VecOut.tu = VecIn1.tu + d * (VecIn2.tu - VecIn1.tu);
+    VecOut.tv = VecIn1.tv + d * (VecIn2.tv - VecIn1.tv);
+
+	return VecOut;
+}
+
+//******************************************************
+//Р¤СѓРЅРєС†РёСЏ РѕР±СЂРµР·Р°РµС‚ РїРѕР»РёРіРѕРЅ РІ СЌРєСЂР°РЅРЅС‹С… РєРѕРѕСЂРґРёРЅР°С‚Р°С…
+//******************************************************
+int CMeshManager::Clip_Vertices_Screen(int Num, vector4 *Source)
+{
+	float MinClipX = 0;
+	float MaxClipX = (float)m_ViewWidth - 1;
+
+	float MinClipY = 0;
+	float MaxClipY = (float)m_ViewHeight - 1;
+
+    float Scale;
+    vector4 Vertices[8];
+
+	//РїРѕСЃР»РµРґРЅСЏСЏ РІРµСЂС€РёРЅР°
+	vector4 *l = &Source[Num - 1];
+    int j = 0;
+
+    for (int i = 0; i < Num; i++)
+	{
+		//СЃСЋРґР° Р·Р°РїРёСЃС‹РІР°РµРј СЂРµР·СѓР»СЊС‚Р°С‚
+        vector4 *v1 = &Vertices[j];
+        //РїРѕСЃР»РµРґРЅСЏСЏ РІРµСЂС€РёРЅР° v2
+		vector4 *v2 = l;
+        //РЅСѓР»РµРІР°СЏ (РїРµСЂРІР°СЏ) РІРµСЂС€РёРЅР° l
+		l = &Source[i];
+
+        if (v2->x < MinClipX)
+		{
+            if (l->x < MinClipX)
+			{
+                continue;
+            }
+            Scale = (MinClipX - l->x) / (v2->x - l->x);
+            v1->x = MinClipX;
+            v1->y = (v2->y - l->y) * Scale + l->y;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Vertices[++j];
+        }
+		else if (v2->x > MaxClipX)
+		{
+            if (l->x > MaxClipX)
+			{
+                continue;
+            }
+            Scale = (MaxClipX - l->x) / (v2->x - l->x);
+            v1->x = MaxClipX;
+            v1->y = (v2->y - l->y) * Scale + l->y;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Vertices[++j];
+        }
+
+        if (l->x < MinClipX)
+		{
+            Scale = (MinClipX - l->x) / (v2->x - l->x);
+            v1->x = MinClipX;
+            v1->y = (v2->y - l->y) * Scale + l->y;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Vertices[++j];
+        }
+		else if (l->x > MaxClipX)
+		{
+            Scale = (MaxClipX - l->x) / (v2->x - l->x);
+            v1->x = MaxClipX;
+            v1->y = (v2->y - l->y) * Scale + l->y;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Vertices[++j];
+        }
+		else
+		{
+            v1->x = l->x;
+            v1->y = l->y;
+            v1->z = l->z;
+			v1->w = l->w;
+            v1->tu = l->tu;
+            v1->tv = l->tv;
+			v1 = &Vertices[++j];
+        }
+    }
+
+    if (j < 3)
+	{
+        return 0;
+    }
+
+    Num = j;
+    l = &Vertices[j - 1];
+    j = 0;
+
+    for (int i = 0; i < Num; i++)
+	{
+        vector4 *v1 = &Source[j];
+        vector4 *v2 = l;
+        l = &Vertices[i];
+
+        if (v2->y < MinClipY)
+		{
+            if (l->y < MinClipY)
+			{
+                continue;
+            }
+            Scale = (MinClipY - l->y) / (v2->y - l->y);
+            v1->x = (v2->x - l->x) * Scale + l->x;
+            v1->y = MinClipY;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Source[++j];
+        }
+		else if (v2->y > MaxClipY)
+		{
+            if (l->y > MaxClipY)
+			{
+                continue;
+            }
+            Scale = (MaxClipY - l->y) / (v2->y - l->y);
+            v1->x = (v2->x - l->x) * Scale + l->x;
+            v1->y = MaxClipY;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Source[++j];
+        }
+
+        if (l->y < MinClipY)
+		{
+            Scale = (MinClipY - l->y) / (v2->y - l->y);
+            v1->x = (v2->x - l->x) * Scale + l->x;
+            v1->y = MinClipY;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+			v1 = &Source[++j];
+        }
+		else if (l->y > MaxClipY)
+		{
+            Scale = (MaxClipY - l->y) / (v2->y - l->y);
+            v1->x = (v2->x - l->x) * Scale + l->x;
+            v1->y = MaxClipY;
+            v1->z = (v2->z - l->z) * Scale + l->z;
+			v1->w = (v2->w - l->w) * Scale + l->w;
+            v1->tu = (v2->tu - l->tu) * Scale + l->tu;
+            v1->tv = (v2->tv - l->tv) * Scale + l->tv;
+            v1 = &Source[++j];
+        }
+		else
+		{
+            v1->x = l->x;
+            v1->y = l->y;
+            v1->z = l->z;
+			v1->w = l->w;
+            v1->tu = l->tu;
+            v1->tv = l->tv;
+			v1 = &Source[++j];
+        }
+    }
+
+	
+    if (j < 3)
+	{
+        return 0;
+    }
+
+	return j;
 
 }
 
 //******************************************************
-//Функция трансформирует сцену
+//Р¤СѓРЅРєС†РёСЏ С‚СЂР°РЅСЃС„РѕСЂРјРёСЂСѓРµС‚ СЃС†РµРЅСѓ
 //******************************************************
 void CMeshManager::Update_MeshManager()
 {
 	m_MatWorld = matrix4x4(
 		1, 0, 0, 0,
 		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1);
+        0, 0, 1, 0,
+        0, 0, 0, 1);
 
-	m_MatView = Get_View_Matrix();
-
-	float Fov = PI / 2.0f; // FOV 90 degree
+	Get_View_Matrix(m_MatView);
+	
+	float Fov =  PI/2.0f; // FOV 90 degree
 	float Aspect = (float)m_ViewWidth / m_ViewHeight;
 	float ZFar = 250.0f;
 	m_ZNear = 0.01f;
 
 	float h, w, Q;
-	w = (1.0f / tanf(Fov * 0.5f)) / Aspect;
-	h = 1.0f / tanf(Fov * 0.5f);
-	Q = ZFar / (ZFar - m_ZNear);
-
+    w = (1.0f/tanf(Fov*0.5f))/Aspect;  
+    h = 1.0f/tanf(Fov*0.5f);   
+    Q = ZFar/(ZFar - m_ZNear);
+	
+	//РёСЃРїРѕР»СЊР·СѓРµРј РїРѕР»РЅС‹Р№ СЂР°СЃС‡РµС‚ РјР°С‚СЂРёС†С‹ РїСЂРѕРµРєС†РёРё
 	m_MatProj = matrix4x4(
 		w, 0, 0, 0,
 		0, h, 0, 0,
 		0, 0, Q, 1,
-		0, 0, -Q * m_ZNear, 0);
+		0, 0, -Q*m_ZNear, 0);
 
-	
-	matrix4x4 MatTemp = Mat4x4_Mat4x4_Mul(m_MatWorld, m_MatView);
-	m_MatRes = Mat4x4_Mat4x4_Mul(MatTemp, m_MatProj);
+	m_MatRes = m_MatWorld * m_MatView * m_MatProj;
 
-	Transform_BSP_Tree(m_Root);
+	Transform_BSP_Tree (m_Root);
+
 }
 
 //******************************************************
-//Функция отображает сцену на экране
+//Р¤СѓРЅРєС†РёСЏ РѕС‚РѕР±СЂР°Р¶Р°РµС‚ СЃС†РµРЅСѓ РЅР° СЌРєСЂР°РЅРµ
 //******************************************************
 void CMeshManager::Draw_MeshManager()
 {
-	Clear_BackBuffer();
+	Clear_Backbuffer();
 
-	Draw_BSP_Tree (m_Root, m_VecPos);
+	Draw_BSP_Tree (m_Root, m_VecCamPos);
 
-	Present_BackBuffer();
+	Present_Backbuffer();
 }
 
 //************************************************
-//Функция выводит список треугольников на экран
+//Р¤СѓРЅРєС†РёСЏ РІС‹РІРѕРґРёС‚ СЃРїРёСЃРѕРє С‚СЂРµСѓРіРѕР»СЊРЅРёРєРѕРІ РЅР° СЌРєСЂР°РЅ
 //************************************************
 void CMeshManager::Draw_Polygon_List(list Polygons)
 {
-	for (UINT i = 0; i < Polygons.PolygonCount; i++)
+	for (int loop = 0; loop < Polygons.PolygonCount; loop++)
     {
 		vector4 Vec1, Vec2, Vec3;
-		Vec1 = Polygons.PolyList[i].Vertex[0];
-		Vec2 = Polygons.PolyList[i].Vertex[1];
-		Vec3 = Polygons.PolyList[i].Vertex[2];
+		Vec1 = Polygons.PolyList[loop].Vertex[0];
+		Vec2 = Polygons.PolyList[loop].Vertex[1];
+		Vec3 = Polygons.PolyList[loop].Vertex[2];
 
-		UINT Tex = Polygons.PolyList[i].TexID;
-
-		//устанавливаем текущую текстуру
-		m_Tex = (UCHAR *) m_LevelTile[Tex];
-
-		//ширина и высота текущей текстуры
-		m_TextureWidth = m_TexInfo[Tex].TexWidth;
-		m_TextureHeight = m_TexInfo[Tex].TexHeight;
+		UINT tex = Polygons.PolyList[loop].TexID;
+		//СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅСѓР¶РЅСѓСЋ С‚РµРєСЃС‚СѓСЂСѓ
+		m_Res  = (UCHAR *) m_pLevelTile[tex];
 
 		Draw_Textured_Triangle(Vec1, Vec2, Vec3);
 	}
 }
 
 //**********************************************************
-//Функция разбивает входящий треугольник на два
-//верхний и нижний и вызывает функцию
-//растеризации одного треугольника
-//или может быть один треугольник с плоским низом, верхом
+//Р¤СѓРЅРєС†РёСЏ СЂР°Р·Р±РёРІР°РµС‚ РІС…РѕРґСЏС‰РёР№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє РЅР° РґРІР°
+//РІРµСЂС…РЅРёР№ Рё РЅРёР¶РЅРёР№ Рё РІС‹Р·С‹РІР°РµС‚ С„СѓРЅРєС†РёСЋ
+//СЂР°СЃС‚РµСЂРёР·Р°С†РёРё РѕРґРЅРѕРіРѕ С‚СЂРµСѓРіРѕР»СЊРЅРёРєР°
+//РёР»Рё РјРѕР¶РµС‚ Р±С‹С‚СЊ РѕРґРёРЅ С‚СЂРµСѓРіРѕР»СЊРЅРёРє СЃ РїР»РѕСЃРєРёРј РЅРёР·РѕРј, РІРµСЂС…РѕРј
 //**********************************************************
-void CMeshManager::Draw_Textured_Triangle(vector4 VecIn1,
-					vector4 VecIn2, vector4 VecIn3)
+void CMeshManager::Draw_Textured_Triangle(vector4 VecIn1, vector4 VecIn2, vector4 VecIn3)
 {
+
 	int Side;
 	float x1, x2, x3;
 	float y1, y2, y3;
 	float iz1, uiz1, viz1, iz2, uiz2, viz2, iz3, uiz3, viz3;
-	float Temp;
-	int y1i, y2i, y3i;
-	int dy;
-	float dyl, dyr;
+	float FloatTemp;
+	int IntTemp;
 
 	x1 = VecIn1.x;
 	y1 = VecIn1.y;
@@ -609,341 +793,273 @@ void CMeshManager::Draw_Textured_Triangle(vector4 VecIn1,
 	y2 = VecIn2.y;
 	x3 = VecIn3.x;
 	y3 = VecIn3.y;
-
-	//текстурные координаты в файле
-	//имеют диапазон от 0 до 1
-	VecIn1.tu *= m_TextureWidth - 1;
-	VecIn1.tv *= m_TextureHeight - 1;
-	VecIn2.tu *= m_TextureWidth - 1;
-	VecIn2.tv *= m_TextureHeight - 1;
-	VecIn3.tu *= m_TextureWidth - 1;
-	VecIn3.tv *= m_TextureHeight - 1;
 	
-	//после умножения на матрицу
-	//проекции w хранит значение z
-	//фактически тут мы делим на z
-	iz1 = 1.0f / VecIn1.w;
-	iz2 = 1.0f / VecIn2.w;
-	iz3 = 1.0f / VecIn3.w;
+	iz1 = VecIn1.w;
+	uiz1 = VecIn1.tu;
+	viz1 = VecIn1.tv;
+
+	iz2 = VecIn2.w;
+	uiz2 = VecIn2.tu;
+	viz2 = VecIn2.tv;
 	
-	uiz1 = VecIn1.tu * iz1;
-	viz1 = VecIn1.tv * iz1;
-	uiz2 = VecIn2.tu * iz2;
-	viz2 = VecIn2.tv * iz2;
-	uiz3 = VecIn3.tu * iz3;
-	viz3 = VecIn3.tv * iz3;
+	iz3 = VecIn3.w;
+	uiz3 = VecIn3.tu;
+	viz3 = VecIn3.tv;
 
-	#define swapfloat(x, y) Temp = x; x = y; y = Temp;
+	//РєРѕРѕСЂРґРёРЅР°С‚С‹ РЅР° СЌРєСЂР°РЅРµ Сѓ РЅР°СЃ С†РµР»С‹Рµ С‡РёСЃР»Р° X Рё Y
+	//РїРѕСЌС‚РѕРјСѓ РЅРµРєРѕС‚РѕСЂС‹Рµ РѕРїРµСЂР°С†РёРё РЅРµРѕР±С…РѕРґРёРјРѕ
+	//РґРµР»Р°С‚СЊ С†РµР»РѕС‡РёСЃР»РµРЅРЅС‹Рµ (float С‚СЂСѓРґРЅРµРµ РґР»СЏ
+	//СЃСЂР°РІРЅРµРЅРёСЏ, РЅР°РїСЂРёРјРµСЂ)
 
-	if (y1 > y2)
+	int y1i = (int) floor (y1);
+	int y2i = (int) floor (y2);
+	int y3i = (int) floor (y3);
+
+	if (y1i > y2i)
 	{
-		swapfloat(x1, x2);
-		swapfloat(y1, y2);
-		swapfloat(iz1, iz2);
-		swapfloat(uiz1, uiz2);
-		swapfloat(viz1, viz2);
+		SWAP(x1, x2, FloatTemp);
+		SWAP(y1, y2, FloatTemp);
+		SWAP(iz1, iz2, FloatTemp);
+		SWAP(uiz1, uiz2, FloatTemp);
+		SWAP(viz1, viz2, FloatTemp);
+		SWAP(y1i, y2i, IntTemp);
 	}
-	if (y1 > y3)
+	if (y1i > y3i)
 	{
-		swapfloat(x1, x3);
-		swapfloat(y1, y3);
-		swapfloat(iz1, iz3);
-		swapfloat(uiz1, uiz3);
-		swapfloat(viz1, viz3);
+		SWAP(x1, x3, FloatTemp);
+		SWAP(y1, y3, FloatTemp);
+		SWAP(iz1, iz3, FloatTemp);
+		SWAP(uiz1, uiz3, FloatTemp);
+		SWAP(viz1, viz3, FloatTemp);
+		SWAP(y1i, y3i, IntTemp);
 	}
-	if (y2 > y3)
+	if (y2i > y3i)
 	{
-		swapfloat(x2, x3);
-		swapfloat(y2, y3);
-		swapfloat(iz2, iz3);
-		swapfloat(uiz2, uiz3);
-		swapfloat(viz2, viz3);
+		SWAP(x2, x3, FloatTemp);
+		SWAP(y2, y3, FloatTemp);
+		SWAP(iz2, iz3, FloatTemp);
+		SWAP(uiz2, uiz3, FloatTemp);
+		SWAP(viz2, viz3, FloatTemp);
+		SWAP(y2i, y3i, IntTemp);
 	}
 	
-	#undef swapfloat
-
-	if (y2 > y1 && y3 > y2)
+	if(y2i > y1i && y3i > y2i)
 	{
+		//РІС‹С‡РёСЃР»СЏРµРј РЅР°РєР»РѕРЅ Р»РµРІРѕР№ Рё РїСЂР°РІРѕР№ СЃС‚РѕСЂРѕРЅС‹
+		//С‚СЂРµСѓРіРѕР»СЊРЅРёРєР°, РїРѕ Р·РЅР°РєСѓ РІРµР»РёС‡РёРЅС‹ РЅР°РєР»РѕРЅР°
+		//(+ РёР»Рё -) РѕРїСЂРµРґРµР»СЏРµРј РєР°РєР°СЏ СЃС‚РѕСЂРѕРЅР°
+		//(Р»РµРІР°СЏ РёР»Рё РїСЂР°РІР°СЏ) РёРјРµРµС‚ Р±РѕР»СЊС€РµРµ Р·РЅР°С‡РµРЅРёРµ РїРѕ Y
 		float dxdy1 = (x2 - x1) / (y2 - y1);
 		float dxdy2 = (x3 - x1) / (y3 - y1);
-		Side = dxdy2 > dxdy1;
+		Side= dxdy2 > dxdy1;
 	}
 
-	if (y1 == y2)
+	if (y1i == y2i)
 		Side = x1 > x2;
-	if (y2 == y3)
+	if (y2i == y3i)
 		Side = x3 > x2;
-
-	int MinClipY = 0;
-	int MaxClipY = m_ViewHeight;
-
-	y1i = (int) floor (y1);
-	y2i = (int) floor (y2);
-	y3i = (int) floor (y3);
-
-	if(y1i < MinClipY) y1i = 0;
-	if(y2i < MinClipY) y2i = 0;
-	if(y3i < MinClipY) y3i = 0;
-
-	if(y1i > MaxClipY) y1i = m_ViewHeight;
-	if(y2i > MaxClipY) y2i = m_ViewHeight;
-	if(y3i > MaxClipY) y3i = m_ViewHeight;
-
-	//отбрасываем треугольники которые вне экрана
-	if(y1i == 0 && y2i == 0 && y3i == 0)
-		return;
-
-	//отбрасываем треугольники которые вне экрана
-	if(y1i == m_ViewHeight && y2i == m_ViewHeight && y3i == m_ViewHeight)
-		return;
-
-	//отбрасываем треугольники которые вне экрана
-	if(x1 < 0 && x2 < 0 && x3 < 0)
-		return;
-
-	//отбрасываем треугольники которые вне экрана
-	if(x1 > m_ViewWidth && x2 > m_ViewWidth && x3 > m_ViewWidth)
-		return;
 
 	if (!Side)
 	{
-		dyl = y3 - y1;
-		m_dxdyl = (x3 - x1) / dyl;
-		m_dudyl = (uiz3 - uiz1) / dyl;
-		m_dvdyl = (viz3 - viz1) / dyl;
-		m_dzdyl = (iz3 - iz1) / dyl;
-	
-		dy = (int)y1 - y1i;
-		m_xl = x1 - dy * m_dxdyl;
-		m_ul = uiz1 - dy * m_dudyl;
-		m_vl = viz1 - dy * m_dvdyl;
-		m_zl = iz1 - dy * m_dzdyl;
+		m_xl = x1;
+		m_ul = uiz1;
+		m_vl = viz1;
+		m_zl = iz1;
 
+		m_dxdyl = (x3 - x1) / (y3 - y1);
+		m_dudyl = (uiz3 - uiz1) / (y3 - y1);
+		m_dvdyl = (viz3 - viz1) / (y3 - y1);
+		m_dzdyl = (iz3 - iz1) / (y3 - y1);
+	
 		if (y1i < y2i)
 		{
-			dyr = y2 - y1;
-			m_dxdyr = (x2 - x1) / dyr;
-			m_dudyr = (uiz2 - uiz1) / dyr;
-			m_dvdyr = (viz2 - viz1) / dyr;
-			m_dzdyr = (iz2 - iz1) / dyr;
+			m_xr = x1;
+			m_ur = uiz1;
+			m_vr = viz1;
+			m_zr = iz1;
 
-			m_xr = x1 - dy * m_dxdyr;
-			m_ur = uiz1 - dy * m_dudyr;
-			m_vr = viz1 - dy * m_dvdyr;
-			m_zr = iz1 - dy * m_dzdyr;
-
+			m_dxdyr = (x2 - x1) / (y2 - y1);
+			m_dudyr = (uiz2 - uiz1) / (y2 - y1);
+			m_dvdyr = (viz2 - viz1) / (y2 - y1);
+			m_dzdyr = (iz2 - iz1) / (y2 - y1);
+			
 			Draw_Textured_Poly(y1i, y2i);
 		}
 		if (y2i < y3i)
 		{
-			dyr = y3 - y2;
-			m_dxdyr = (x3 - x2) / dyr;
-			m_dudyr = (uiz3 - uiz2) / dyr;
-			m_dvdyr = (viz3 - viz2) / dyr;
-			m_dzdyr = (iz3 - iz2) / dyr;
+			m_xr = x2;
+			m_ur = uiz2;
+			m_vr = viz2;
+			m_zr = iz2;
 
-			dy = (int) y2 - y2i;
-			m_xr = x2 - dy * m_dxdyr;
-			m_ur = uiz2 - dy * m_dudyr;
-			m_vr = viz2 - dy * m_dvdyr;
-			m_zr = iz2 - dy * m_dzdyr;
-
+			m_dxdyr = (x3 - x2) / (y3 - y2);
+			m_dudyr = (uiz3 - uiz2) / (y3 - y2);
+			m_dvdyr = (viz3 - viz2) / (y3 - y2);
+			m_dzdyr = (iz3 - iz2) / (y3 - y2);
+			
 			Draw_Textured_Poly(y2i, y3i);
 		}
 	}
 	else
 	{
-		dyr = y3 - y1;
-		m_dxdyr = (x3 - x1) / dyr;
-		m_dudyr = (uiz3 - uiz1) / dyr;
-		m_dvdyr = (viz3 - viz1) / dyr;
-		m_dzdyr = (iz3 - iz1) / dyr;
-
-		dy = (int)y1 - y1i;
-		m_xr = x1 - dy * m_dxdyr;
-		m_ur = uiz1 - dy * m_dudyr;
-		m_vr = viz1 - dy * m_dvdyr;
-		m_zr = iz1 - dy * m_dzdyr;
+		m_xr = x1;
+		m_ur = uiz1;
+		m_vr = viz1;
+		m_zr = iz1;
 		
-		if (y1i < y2i)
+		m_dxdyr = (x3 - x1) / (y3 - y1);
+		m_dudyr = (uiz3 - uiz1) / (y3 - y1);
+		m_dvdyr = (viz3 - viz1) / (y3 - y1);
+		m_dzdyr = (iz3 - iz1) / (y3 - y1);
+		
+		if (y1 < y2)
 		{
-	
-			dyl = y2 - y1;
-			m_dxdyl = (x2 - x1) / dyl;
-			m_dudyl = (uiz2 - uiz1) / dyl;
-			m_dvdyl = (viz2 - viz1) / dyl;
-			m_dzdyl = (iz2 - iz1) / dyl;
+			m_xl = x1;
+			m_ul = uiz1;
+			m_vl = viz1;
+			m_zl = iz1;
 
-			m_xl = x1 - dy * m_dxdyl;
-			m_ul = uiz1 - dy * m_dudyl;
-			m_vl = viz1 - dy * m_dvdyl;
-			m_zl = iz1 - dy * m_dzdyl;
-
+			m_dxdyl = (x2 - x1) / (y2 - y1);
+			m_dudyl = (uiz2 - uiz1) / (y2 - y1);
+			m_dvdyl = (viz2 - viz1) / (y2 - y1);
+			m_dzdyl = (iz2 - iz1) / (y2 - y1);
+			
 			Draw_Textured_Poly(y1i, y2i);
 		}
-		if (y2i < y3i)
+		if (y2 < y3)
 		{
-			dyl = y3 - y2;
-			m_dxdyl = (x3 - x2) / dyl;
-			m_dudyl = (uiz3 - uiz2) / dyl;
-			m_dvdyl = (viz3 - viz2) / dyl;
-			m_dzdyl = (iz3 - iz2) / dyl;
-			
-			dy = (int) y2 - y2i;
-			m_xl = x2 - dy * m_dxdyl;
-			m_ul = uiz2 - dy * m_dudyl;
-			m_vl = viz2 - dy * m_dvdyl;
-			m_zl = iz2 - dy * m_dzdyl;
+			m_xl = x2;
+			m_ul = uiz2;
+			m_vl = viz2;
+			m_zl = iz2;
 
+			m_dxdyl = (x3 - x2) / (y3 - y2);
+			m_dudyl = (uiz3 - uiz2) / (y3 - y2);
+			m_dvdyl = (viz3 - viz2) / (y3 - y2);
+			m_dzdyl = (iz3 - iz2) / (y3 - y2);
+						
 			Draw_Textured_Poly(y2i, y3i);
 		}
 	}
 }
 
 //*******************************************
-//Функция растеризации одного треугольника
+//Р¤СѓРЅРєС†РёСЏ СЂР°СЃС‚РµСЂРёР·Р°С†РёРё РѕРґРЅРѕРіРѕ С‚СЂРµСѓРіРѕР»СЊРЅРёРєР°
 //*******************************************
 void CMeshManager::Draw_Textured_Poly(int y1, int y2)
 {
-	int x1, x2;
-	int dx;
 	float ui, vi, zi;
 	float du, dv, dz;
-
-	int MinClipX = 0;
-	int MaxClipX = m_ViewWidth;
-
+	
 	for (int y = y1; y<y2; y++)
 	{
-		x1 = (int)m_xl;
-		x2 = (int)m_xr;
-
-		if ((dx = (x2 - x1)) > 0)
+		if ((m_xr - m_xl)>0)
 		{
-			du = (m_ur - m_ul) / (m_xr - m_xl);
-			dv = (m_vr - m_vl) / (m_xr - m_xl);
-			dz = (m_zr - m_zl) / (m_xr - m_xl);
+			du = (m_ur - m_ul)/(m_xr - m_xl);
+			dv = (m_vr - m_vl)/(m_xr - m_xl);
+			dz = (m_zr - m_zl)/(m_xr - m_xl);
 		}
 		else
 		{
-			du = (m_ur - m_ul);
-			dv = (m_vr - m_vl);
-			dz = (m_zr - m_zl);
+			du = 0;
+			dv = 0;
+			dz = 0;
 		}
 
-		float dxt = 1 - (m_xl - x1);
+		/*
+		int xln = (int)m_xl;
+
+		float dxt = 1 - (m_xl - xln);
 
 		zi = m_zl + dxt * dz;
 		ui = m_ul + dxt * du;
 		vi = m_vl + dxt * dv;
+		*/
 		
-		if(x1 < MinClipX)
+		zi = m_zl;
+		ui = m_ul;
+		vi = m_vl;
+
+		for (int x=(int)m_xl; x<(int)m_xr; x++)
 		{
-			dx = MinClipX-x1;
-
-			ui+=dx * du;
-			vi+=dx * dv;
-			zi+=dx * dz;
-
-			x1 = MinClipX;
-		}
-
-		if(x2> MaxClipX)
-			x2 = MaxClipX;
-
-		for (int x=x1; x<x2; x++)
-		{
-
 			float z = 1.0f/zi;
 			float u = ui * z;
-			float Vec = vi * z;
+			float v = vi * z;
 
-			UINT Temp = (int)u  + (((int)Vec) * m_TextureWidth);
+			UINT t = (int)u  + (((int)v) * m_TextureWidth);
 
-			//если Temp выходит за размеры массива текстуры
-			if (Temp > (m_TextureWidth * m_TextureHeight - 1))
-				return;
+			if( t < 0 || t > (m_TextureWidth * m_TextureHeight - 1) )
+				continue;
 
-			if (Temp < 0)
-				return;
+			t= t*3;
 
-			Temp= Temp*3;
-			
 			int Index = y * m_BackLpitch + x * 4;
 			
-			m_Data[Index] = m_Tex[Temp + 0];
-			Index++;
-
-			m_Data[Index] = m_Tex[Temp + 1];
-			Index++;
-
-			m_Data[Index] = m_Tex[Temp + 2];
-			Index++;
-
-			m_Data[Index] =  0;
-			Index++;
-
+			m_Data[Index + 0] = m_Res[t + 0];
+			m_Data[Index + 1] = m_Res[t + 1];
+			m_Data[Index + 2] = m_Res[t + 2];
+			m_Data[Index + 3] = 0;
+				
 			ui+=du;
 			vi+=dv;
 			zi+=dz;
 		}
 
-		m_xl+= m_dxdyl;
-		m_ul+= m_dudyl;
-		m_vl+= m_dvdyl;
-		m_zl+= m_dzdyl;
+		m_xl += m_dxdyl;
+		m_ul += m_dudyl;
+		m_vl += m_dvdyl;
+		m_zl += m_dzdyl;
 
-		m_xr+= m_dxdyr;
-		m_ur+= m_dudyr;
-		m_vr+= m_dvdyr;
-		m_zr+= m_dzdyr;
+		m_xr += m_dxdyr;
+		m_ur += m_dudyr;
+		m_vr += m_dvdyr;
+		m_zr += m_dzdyr;
 	}
 }
 
 //***********************************************
-//Функция загрузает BMP файл с текстурой сцены
+//Р¤СѓРЅРєС†РёСЏ Р·Р°РіСЂСѓР·Р°РµС‚ BMP С„Р°Р№Р» СЃ С‚РµРєСЃС‚СѓСЂРѕР№ СЃС†РµРЅС‹
 //***********************************************
-bool CMeshManager::Load_BMP(char *Filename, int Tile)
+bool CMeshManager::Load_BMP(char *szFilename, int Tile)
 {
-	FILE *Fp = NULL;
+	FILE *fp;
 
-	fopen_s(&Fp, Filename,"rb");
-	if(Fp==NULL)
-		MessageBox(NULL, "Error Open BMP File", "INFO", MB_OK);
+	fopen_s(&fp, szFilename,"rb");
+	if(fp==NULL) printf("Error Open File");
 
-	BITMAPFILEHEADER Bfh;
-	fread(&Bfh, sizeof(Bfh), 1, Fp);
+	BITMAPFILEHEADER bfh;
+	fread(&bfh, sizeof(bfh), 1, fp);
 
-	BITMAPINFOHEADER Bih;
-	fread(&Bih, sizeof(Bih), 1, Fp);
+	BITMAPINFOHEADER bih;
+	fread(&bih, sizeof(bih), 1, fp);
 
-	m_LevelTile[Tile] = new unsigned char [Bih.biWidth*Bih.biHeight*3];
+	m_pLevelTile[Tile] = new unsigned char [bih.biWidth*bih.biHeight*3];
 
-	fread(m_LevelTile[Tile],Bih.biWidth*Bih.biHeight*3,1,Fp);
+	fread(m_pLevelTile[Tile],bih.biWidth*bih.biHeight*3,1,fp);
 
-	//для каждой текстуры сохраняем ее ширину и высоту
-	m_TexInfo[Tile].TexWidth = Bih.biWidth;
-	m_TexInfo[Tile].TexHeight = Bih.biHeight;
-	
+	//РІСЃРµ С‚РµРєСЃС‚СѓСЂС‹ РѕРґРЅРѕРіРѕ СЂР°Р·РјРµСЂР° 256С…256 РїРёРєСЃРµР»РµР№
+	m_TextureWidth = bih.biWidth;
+	m_TextureHeight = bih.biHeight;
+
 	return true;
 }
 
 //****************************
-//Функция строит BSP дерево
+//Р¤СѓРЅРєС†РёСЏ СЃС‚СЂРѕРёС‚ BSP РґРµСЂРµРІРѕ
 //****************************
 void CMeshManager::Build_BSP_Tree(BSP_tree *Tree, list Polygons)
 {
 	memset(Tree,0, sizeof(BSP_tree));
-	polygon   *Root = Polygons.Get_From_List();
-	Tree->Partition= Root->Get_Plane();
-	Tree->Polygons.Add_To_List(Root);
+	polygon   *root = Polygons.Get_From_List();
+	Tree->Partition= root->Get_Plane();
+	Tree->Polygons.Add_To_List(root);
 
-	list      FrontList, BackList;
+	list FrontList, BackList;
     polygon   *Poly;
 
 	while ((Poly = Polygons.Get_From_List()) != 0)
 	{
-		int Result = Tree->Partition.Classify_Polygon (Poly);
+		int   Result = Tree->Partition.Classify_Polygon (Poly);
 
 		switch (Result)
 		{
@@ -961,35 +1077,37 @@ void CMeshManager::Build_BSP_Tree(BSP_tree *Tree, list Polygons)
 			
 			case SPANNING:
 				int cf = 0, cb = 0;
-				polygon   *front_piece=NULL, *back_piece=NULL;
-				Split_Polygon (Poly, &Tree->Partition, front_piece, back_piece, cf, cb);
+				polygon   *FrontPiece=NULL, *BackPiece=NULL;
+				Split_Polygon (Poly, &Tree->Partition, FrontPiece, BackPiece, cf, cb);
 
+				//cf - РєРѕР»РёС‡РµСЃС‚РІРѕ С‚СЂРµСѓРіРѕР»СЊРЅРёРєРѕРІ СЃРїРµСЂРµРґРё СЃРµРєСѓС‰РµР№ РїР»РѕСЃРєРѕСЃС‚Рё
+				//cb - РєРѕР»РёС‡РµСЃС‚РІРѕ С‚СЂРµСѓРіРѕР»СЊРЅРёРєРѕРІ СЃР·РґР°Р»Рё СЃРµРєСѓС‰РµР№ РїР»РѕСЃРєРѕСЃС‚Рё
 				if(cf == 1 && cb == 1)
 				{
-					FrontList.Add_To_List (&front_piece[0]);
-					BackList.Add_To_List (&back_piece[0]);
+					FrontList.Add_To_List (&FrontPiece[0]);
+					BackList.Add_To_List (&BackPiece[0]);
 				}
 				else if(cf == 1 && cb == 0)
 				{
-					FrontList.Add_To_List (&front_piece[0]);
+					FrontList.Add_To_List (&FrontPiece[0]);
 				}
 				else if(cf == 1 && cb == 2)
 				{
-					FrontList.Add_To_List (&front_piece[0]);
+					FrontList.Add_To_List (&FrontPiece[0]);
 					
-					BackList.Add_To_List (&back_piece[0]);	
-					BackList.Add_To_List (&back_piece[1]);
+					BackList.Add_To_List (&BackPiece[0]);	
+					BackList.Add_To_List (&BackPiece[1]);
 				}
 				else if(cb == 1 && cf == 0)
 				{
-					BackList.Add_To_List (&back_piece[0]);	
+					BackList.Add_To_List (&BackPiece[0]);	
 				}
 				else if(cb == 1 && cf == 2)
 				{
-					BackList.Add_To_List (&back_piece[0]);	
+					BackList.Add_To_List (&BackPiece[0]);	
 						
-					FrontList.Add_To_List (&front_piece[0]);	
-					FrontList.Add_To_List (&front_piece[1]);
+					FrontList.Add_To_List (&FrontPiece[0]);	
+					FrontList.Add_To_List (&FrontPiece[1]);
 				}
 			break;
 		  }
@@ -1008,8 +1126,8 @@ void CMeshManager::Build_BSP_Tree(BSP_tree *Tree, list Polygons)
 }
 
 //*******************************************
-//Функция на основе полигона (треугольника)
-//создает плоскость
+//Р¤СѓРЅРєС†РёСЏ РЅР° РѕСЃРЅРѕРІРµ РїРѕР»РёРіРѕРЅР° (С‚СЂРµСѓРіРѕР»СЊРЅРёРєР°)
+//СЃРѕР·РґР°РµС‚ РїР»РѕСЃРєРѕСЃС‚СЊ
 //*******************************************
 plane polygon::Get_Plane()
 {
@@ -1022,11 +1140,11 @@ plane polygon::Get_Plane()
     p.b = (VecEdge1.z*VecEdge2.x)-(VecEdge2.z*VecEdge1.x);
     p.c = (VecEdge1.x*VecEdge2.y)-(VecEdge2.x*VecEdge1.y);
     
-	float Len = sqrtf(p.a * p.a + p.b * p.b + p.c * p.c);
+	float len = sqrtf(p.a * p.a + p.b * p.b + p.c * p.c);
 
-	p.a = p.a / Len;
-	p.b = p.b / Len;
-	p.c = p.c / Len;
+	p.a = p.a / len;
+	p.b = p.b / len;
+	p.c = p.c / len;
 
 	p.d=-(p.a*Vertex[0].x+p.b*Vertex[0].y+p.c*Vertex[0].z);
 
@@ -1034,24 +1152,25 @@ plane polygon::Get_Plane()
 }
 
 //*******************************************
-//Функция возвращает нормаль к треугольнику
+//Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ РЅРѕСЂРјР°Р»СЊ Рє С‚СЂРµСѓРіРѕР»СЊРЅРёРєСѓ
 //*******************************************
 vector4 polygon::GetNormal()
 {
-	vector4 VecTemp;
+	vector4 VecTemp; 
         
 	vector4 VecEdge1 = Vertex[1] - Vertex[0];
 	vector4 VecEdge2 = Vertex[2] - Vertex[0];
 	
 	VecTemp.x = (VecEdge1.y*VecEdge2.z)-(VecEdge2.y*VecEdge1.z);
-	VecTemp.y = (VecEdge1.z*VecEdge2.x)-(VecEdge2.z*VecEdge1.x);
-	VecTemp.z = (VecEdge1.x*VecEdge2.y)-(VecEdge2.x*VecEdge1.y);
+    VecTemp.y = (VecEdge1.z*VecEdge2.x)-(VecEdge2.z*VecEdge1.x);
+    VecTemp.z = (VecEdge1.x*VecEdge2.y)-(VecEdge2.x*VecEdge1.y);
     
 	return VecTemp;
 }
 
+
 //****************************************************
-//Функция определяет расстояние точки до плоскости
+//Р¤СѓРЅРєС†РёСЏ РѕРїСЂРµРґРµР»СЏРµС‚ СЂР°СЃСЃС‚РѕСЏРЅРёРµ С‚РѕС‡РєРё РґРѕ РїСЃР»РѕСЃРєРѕСЃС‚Рё
 //****************************************************
 float plane::Classify_Point (vector4 Eye)
 {
@@ -1059,14 +1178,14 @@ float plane::Classify_Point (vector4 Eye)
 }
 
 //****************************************************
-//Функция определяет треугольник лежит на плоскости,
-//перед, за плоскостью, или разбивается плоскостью
+//Р¤СѓРЅРєС†РёСЏ РѕРїСЂРµРґРµР»СЏРµС‚ С‚СЂРµСѓРіРѕР»СЊРЅРёРє Р»РµР¶РёС‚ РЅР° РїР»РѕСЃРєРѕСЃС‚Рё,
+//РїРµСЂРµРґ, Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ, РёР»Рё СЂР°Р·Р±РёРІР°РµС‚СЃСЏ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
 //****************************************************
 int plane::Classify_Polygon (polygon *Poly)
 {
 	float p[3];
 	
-	for(UINT i=0;i<3;i++)
+	for(int i=0;i<3;i++)
 		p[i]=a*Poly->Vertex[i].x + b*Poly->Vertex[i].y + c*Poly->Vertex[i].z + d;
 
 	if(p[0]==0 && p[1]==0 && p[2]==0)
@@ -1083,98 +1202,98 @@ int plane::Classify_Polygon (polygon *Poly)
 }
 
 //*****************************************
-//Функция возвращает нормаль к плоскости
+//Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ РЅРѕСЂРјР°Р»СЊ Рє РїР»РѕСЃРєРѕСЃС‚Рё
 //*****************************************
 vector4 plane::Normal()
 {
-	vector4 VecTemp;
+	vector4 t;
 
-	VecTemp.x = a;
-	VecTemp.y = b;
-	VecTemp.z = c;
+	t.x = a;
+	t.y = b;
+	t.z = c;
 
-	return VecTemp;
+	return t;
 }
 
 //*******************************************
-//Функция разбивает треугольник плоскостью
-//на части
+//Р¤СѓРЅРєС†РёСЏ СЂР°Р·Р±РёРІР°РµС‚ С‚СЂРµСѓРіРѕР»СЊРЅРёРє РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+//РЅР° С‡Р°СЃС‚Рё
 //*******************************************
 void CMeshManager::Split_Polygon (polygon *Poly, plane *Part, polygon *&Front, polygon *&Back, int &cf, int &cb)
 {
-	int Count = 3;
-	UINT FrontC = 0, BackC = 0;
-	vector4 PtA, PtB, FrontSet[4], BackSet[4];
-	float SideA, SideB;
+   int   Count = 3;
+   int FrontC = 0, BackC = 0;
+   vector4 PtA, PtB, FrontSet[4], BackSet[4];
+   float	SideA, SideB;
 
-	PtA = Poly->Vertex[Count - 1];
+   PtA = Poly->Vertex[Count - 1];
 
-	SideA = Part->Classify_Point ((vector4)PtA);
+   SideA = Part->Classify_Point ((vector4)PtA);
 
-	float fEpsilon = 0.001f;
+   float epsilon = 0.001f;
 
-	if(SideA < fEpsilon && SideA > -fEpsilon)
-		SideA = 0.0f;
+   if(SideA < epsilon && SideA > -epsilon)
+	   SideA = 0.0f;
    
-	for (short i = -1; ++i < Count;)
-	{
-		PtB = Poly->Vertex[i];
+   for (short i = -1; ++i < Count;)
+   {
+      PtB = Poly->Vertex[i];
 
-		SideB = Part->Classify_Point ((vector4)PtB);
+      SideB = Part->Classify_Point ((vector4)PtB);
 
-		if(SideB < fEpsilon && SideB > -fEpsilon)
-		SideB = 0.0f;
+	  if(SideB < epsilon && SideB > -epsilon)
+	   SideB = 0.0f;
 
-		if (SideB > 0)
-		{
-			if (SideA < 0)
-			{
-				// compute the intersection point of the line
-				// from point A to point B with the Partition
-				// plane. This is a simple ray-plane intersection.
-				vector4 Vec = PtB - PtA;
+      if (SideB > 0)
+      {
+         if (SideA < 0)
+         {
+            // compute the intersection point of the line
+            // from point A to point B with the Partition
+            // plane. This is a simple ray-plane intersection.
+            vector4 v = PtB - PtA;
 
-				vector4 Norm = Part->Normal();
-				float   fSect = - Part->Classify_Point (PtA) / Vec4_Dot(Norm, Vec);
+			float   sect = - Part->Classify_Point (PtA) / (Part->Normal() | v);
 
-				BackSet[BackC++] = PtA + (Vec * fSect);
-				FrontSet[FrontC++] = PtA + (Vec * fSect);
-			}
+			BackSet[BackC++] = PtA + (v * sect);
+			FrontSet[FrontC++] = PtA + (v * sect);
+         }
 		 
-			FrontSet[FrontC++] = PtB;
+		 FrontSet[FrontC++] = PtB;
 		 
-		}
-		else if (SideB < 0)
-		{
-			if (SideA > 0)
-			{
-				// compute the intersection point of the line
-				// from point A to point B with the Partition
-				// plane. This is a simple ray-plane intersection.
-				vector4 Vec = PtB - PtA;
+      }
+      else if (SideB < 0)
+      {
+         if (SideA > 0)
+         {
+            // compute the intersection point of the line
+            // from point A to point B with the Partition
+            // plane. This is a simple ray-plane intersection.
+            vector4 v = PtB - PtA;
 		
-				vector4 Norm = Part->Normal();
-				float   fSect = - Part->Classify_Point (PtA) / Vec4_Dot(Norm, Vec);
+			float   sect = - Part->Classify_Point (PtA) / (Part->Normal() | v);
 		
-				BackSet[BackC++] = PtA + (Vec * fSect);
-				FrontSet[FrontC++] = PtA + (Vec * fSect);
+			BackSet[BackC++] = PtA + (v * sect);
+			FrontSet[FrontC++] = PtA + (v * sect);
 		
-			}
+         }
 
-			BackSet[BackC++] = PtB;
-		}
-		else
-		{
-			BackSet[BackC++] = PtB;
-			FrontSet[FrontC++] = PtB;
-		}
+		 BackSet[BackC++] = PtB;
+		 
+      }
+      else
+	  {
+		  BackSet[BackC++] = PtB;
+		  FrontSet[FrontC++] = PtB;
+			
+	  }
   
-		PtA = PtB;
-		SideA = SideB;
-	}
+	  PtA = PtB;
+      SideA = SideB;
+   }
 
-	if(FrontC == 4) //in return we got 2 front triangles
-	{
+   if(FrontC == 4) //in return we got 2 triangles
+   {
 		Front = new polygon[2];
 		ZeroMemory(Front, 2 * sizeof(polygon));
    
@@ -1190,12 +1309,12 @@ void CMeshManager::Split_Polygon (polygon *Poly, plane *Part, polygon *&Front, p
 		Front[1].Vertex[2] = FrontSet[3];
 		Front[1].TexID = Poly->TexID;
   
-		//output tri count
+		//output tri Count
 		cf = 2;
 
-	}
-	else if(FrontC == 3) //in return we got 1 front triangle
-	{
+   }
+   else if(FrontC == 3) //in return we got 1 triangle
+   {
 		Front = new polygon[1];
 		ZeroMemory(Front, 1 * sizeof(polygon));
 
@@ -1204,17 +1323,18 @@ void CMeshManager::Split_Polygon (polygon *Poly, plane *Part, polygon *&Front, p
 		Front[0].Vertex[2] = FrontSet[2];
 		Front[0].TexID = Poly->TexID;
 		
-		//output tri count
+		//output tri Count
 		cf = 1;
-	}
-	else
-	{
-		//output tri count
-		cf = 0;
-	}
 
-	if(BackC == 4) //in return we got 2 back triangles
-	{
+   }
+   else
+   {
+	   //output tri Count
+	   cf = 0;
+   }
+
+   if(BackC == 4) //in return we got 2 triangles
+   {
 		Back = new polygon[2];
 		ZeroMemory(Back, 2 * sizeof(polygon));
 
@@ -1223,6 +1343,7 @@ void CMeshManager::Split_Polygon (polygon *Poly, plane *Part, polygon *&Front, p
 		Back[0].Vertex[1] = BackSet[1];
 		Back[0].Vertex[2] = BackSet[2];
 		Back[0].TexID = Poly->TexID;
+
 		
 		//second tri
 		Back[1].Vertex[0] = BackSet[0];
@@ -1230,11 +1351,11 @@ void CMeshManager::Split_Polygon (polygon *Poly, plane *Part, polygon *&Front, p
 		Back[1].Vertex[2] = BackSet[3];
 		Back[1].TexID = Poly->TexID;
 
-		//output tri count
+		//output tri Count
 		cb = 2;
-	}
-	else if(BackC == 3 ) //in return we got 1 back triangle
-	{
+   }
+   else if(BackC == 3 ) //in return we got 1 triangle
+   {
 		Back = new polygon[1];
 		ZeroMemory(Back, 1 * sizeof(polygon));
 
@@ -1243,58 +1364,56 @@ void CMeshManager::Split_Polygon (polygon *Poly, plane *Part, polygon *&Front, p
 		Back[0].Vertex[2] = BackSet[2];
 		Back[0].TexID = Poly->TexID;
 		
-		//output tri count
+		//output tri Count
 		cb = 1;
-	}
-	else
-	{
-		//output tri count
+		
+   }
+   else
+   {
+	   //output tri Count
 		cb = 0;
-	}
+   }
 }
 
 //*******************************************
-//Перегруженый оператор вычитания векторов
+//РџРµСЂРµРіСЂСѓР¶РµРЅС‹Р№ РѕРїРµСЂР°С‚РѕСЂ РІС‹С‡РёС‚Р°РЅРёСЏ РІРµРєС‚РѕСЂРѕРІ
 //*******************************************
 vector4 vector4::operator - (const vector4 & VecIn)
 {
-	vector4 VecOut;
+	vector4 t;
 
-	VecOut.x = x - VecIn.x;
-	VecOut.y = y - VecIn.y;
-	VecOut.z = z - VecIn.z;
-	VecOut.w = 1.0f;
+	t.x = x - VecIn.x;
+	t.y = y - VecIn.y;
+	t.z = z - VecIn.z;
+	t.w = 1.0f;
 
-	VecOut.tu = tu - VecIn.tu;
-	VecOut.tv = tv - VecIn.tv;
+	t.tu = tu - VecIn.tu;
+	t.tv = tv - VecIn.tv;
 
-	return VecOut;
+	return t;
 };
 
 //******************************************
-//Перегруженый оператор сложения векторов
+//РџРµСЂРµРіСЂСѓР¶РµРЅС‹Р№ РѕРїРµСЂР°С‚РѕСЂ СЃР»РѕР¶РµРЅРёСЏ РІРµРєС‚РѕСЂРѕРІ
 //******************************************
-vector4 vector4::operator + (const vector4& VecIn)
+vector4 vector4::operator + (const vector4 & VecIn)
 {
-	vector4 VecOut;
+	vector4 t;
 
-	VecOut.x = x + VecIn.x;
-	VecOut.y = y + VecIn.y;
-	VecOut.z = z + VecIn.z;
-	VecOut.w = 1.0f;
+	t.x = x + VecIn.x;
+	t.y = y + VecIn.y;
+	t.z = z + VecIn.z;
+	t.w = 1.0f;
 
-	VecOut.tu = tu + VecIn.tu;
-	VecOut.tv = tv + VecIn.tv;
+	t.tu = tu + VecIn.tu;
+	t.tv = tv + VecIn.tv;
 
-	return VecOut;
+	return t;
 };
 
-//******************************************
-//Перегруженый оператор сложения векторов
-//******************************************
-vector4 &vector4::operator += (const vector4& VecIn)
-{
 
+vector4 & vector4::operator += (const vector4 & VecIn)
+{
 	x = x + VecIn.x;
 	y = y + VecIn.y;
 	z = z + VecIn.z;
@@ -1307,26 +1426,26 @@ vector4 &vector4::operator += (const vector4& VecIn)
 };
 
 //******************************************
-//Перегруженый оператор умножения вектора
-//на скаляр
+//РџРµСЂРµРіСЂСѓР¶РµРЅС‹Р№ РѕРїРµСЂР°С‚РѕСЂ СѓРјРЅРѕР¶РµРЅРёСЏ РІРµРєС‚РѕСЂР°
+//РЅР° СЃРєР°Р»СЏСЂ
 //******************************************
 vector4 vector4::operator * (const float & ValIn)
 {
-	vector4 VecOut;
+	vector4 t;
 
-	VecOut.x = x * ValIn;
-	VecOut.y = y * ValIn;
-	VecOut.z = z * ValIn;
-	VecOut.w = 1.0f;
+	t.x = x * ValIn;
+	t.y = y * ValIn;
+	t.z = z * ValIn;
+	t.w = 1.0f;
 
-	VecOut.tu = tu * ValIn;
-	VecOut.tv = tv * ValIn;
+	t.tu = tu * ValIn;
+	t.tv = tv * ValIn;
 
-	return VecOut;
+	return t;
 };
 
 //*************************************************
-//Перегруженый оператор присваивания для вектора
+//РџРµСЂРµРіСЂСѓР¶РµРЅС‹Р№ РѕРїРµСЂР°С‚РѕСЂ РїСЂРёСЃРІР°РёРІР°РЅРёСЏ РґР»СЏ РІРµРєС‚РѕСЂР°
 //*************************************************
 vector4 & vector4::operator = (const vector4 & VecIn)
 {
@@ -1341,9 +1460,8 @@ vector4 & vector4::operator = (const vector4 & VecIn)
 	return *this;
 }
 
-
 //**************************************************
-//Конструктор с параметрами для структуры вектора
+//РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ СЃ РїР°СЂР°РјРµС‚СЂР°РјРё РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РІРµРєС‚РѕСЂР°
 //**************************************************
 vector4::vector4(float ix, float iy, float iz)
 {
@@ -1354,23 +1472,33 @@ vector4::vector4(float ix, float iy, float iz)
 }
 
 //***********************************
-//Деструктор для структуры вектора
+//Р”РµСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РІРµРєС‚РѕСЂР°
 //***********************************
 vector4::~vector4()
 {
+
 };
 
 //*************************************************
-//Конструктор по умолчанию для структуры вектора
+//РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РІРµРєС‚РѕСЂР°
 //*************************************************
 vector4::vector4()
 {
+
 };
 
-//*****************************
-//Функция удаляет BSP дерево
-//вызывается если нет деструктора в структуре list
-//*****************************
+//************************************************
+//РџРµСЂРµРіСЂСѓР¶РµРЅС‹Р№ РѕРїРµСЂР°С‚РѕСЂ СЃРєР°Р»СЏСЂРЅРѕРіРѕ РїСЂРѕРёР·РІРµРґРµРЅРёСЏ
+//РІРµРєС‚РѕСЂРѕРІ
+//************************************************
+float vector4::operator | (const vector4 & VecIn)
+{
+	return x * VecIn.x + y * VecIn.y + z * VecIn.z;
+};
+
+//*****************************************************
+//Р¤СѓРЅРєС†РёСЏ СѓРґР°Р»СЏРµС‚ BSP РґРµСЂРµРІРѕ
+//*****************************************************
 void CMeshManager::Delete_BSP(BSP_tree *Tree)
 {
 	if(Tree->Front != NULL)
@@ -1384,24 +1512,22 @@ void CMeshManager::Delete_BSP(BSP_tree *Tree)
 	if(Tree->Back != NULL)
 	{
 		Delete_BSP(Tree->Back);
-		
+    
 		delete Tree->Back;
 		Tree->Back = NULL;
 	}
 }
 
 //*********************************************
-//Функция проверяет находится ли треугольник
-//в области просмотра (frustum view)
+//Р¤СѓРЅРєС†РёСЏ РїСЂРѕРІРµСЂСЏРµС‚ РЅР°С…РѕРґРёС‚СЃСЏ Р»Рё С‚СЂРµСѓРіРѕР»СЊРЅРёРє
+//РІ РѕР±Р»Р°СЃС‚Рё РїСЂРѕСЃРјРѕС‚СЂР° (frustum view)
 //*********************************************
-bool CMeshManager::Polygon_In_Frustum( UINT NumPoints, vector4* PointList )
+bool CMeshManager::Polygon_In_Frustum( int NumPoints, vector4* PointList )
 {
-	UINT f, p;
+	int f, p;
 
-	//имеется 6 плоскостей пирамиды просмотра
 	for( f = 0; f < 6; f++ )
 	{
-		//для треугольника это 3 вершины
 		for( p = 0; p < NumPoints; p++ )
 		{
 			if(m_Frustum[f][0] * PointList[p].x + m_Frustum[f][1] * PointList[p].y + m_Frustum[f][2] * PointList[p].z + m_Frustum[f][3] > 0 )
@@ -1416,172 +1542,144 @@ bool CMeshManager::Polygon_In_Frustum( UINT NumPoints, vector4* PointList )
 }
 
 //*************************************************
-//Функция из матрицы извлекает плоскости 
-//отсечения области просмотра - верхнюю, нижнюю,
-//левую, правую, блюжнюю, дальнюю
+//Р¤СѓРЅРєС†РёСЏ РёР· РјР°С‚СЂРёС†С‹ РёР·РІР»РµРєР°РµС‚ РїР»РѕСЃРєРѕСЃС‚Рё 
+//РѕС‚СЃРµС‡РµРЅРёСЏ РѕР±Р»Р°СЃС‚Рё РїСЂРѕСЃРјРѕС‚СЂР° - РІРµСЂС…РЅСЋСЋ, РЅРёР¶РЅСЋСЋ,
+//Р»РµРІСѓСЋ, РїСЂР°РІСѓСЋ, Р±Р»СЋР¶РЅСЋСЋ, РґР°Р»СЊРЅСЋСЋ
 //*************************************************
 void CMeshManager::Extract_Frustum()
 {
-	float Temp;
+	float	t;
 	
 	// Extract the RIGHT clipping plane
-	m_Frustum[0][0] = m_MatRes.Mat[M03] - m_MatRes.Mat[M00];
-	m_Frustum[0][1] = m_MatRes.Mat[M13] - m_MatRes.Mat[M10];
-	m_Frustum[0][2] = m_MatRes.Mat[M23] - m_MatRes.Mat[M20];
-	m_Frustum[0][3] = m_MatRes.Mat[M33] - m_MatRes.Mat[M30];
+	m_Frustum[0][0] = m_MatRes.Mat16[ 3] - m_MatRes.Mat16[ 0];
+	m_Frustum[0][1] = m_MatRes.Mat16[ 7] - m_MatRes.Mat16[ 4];
+	m_Frustum[0][2] = m_MatRes.Mat16[11] - m_MatRes.Mat16[ 8];
+	m_Frustum[0][3] = m_MatRes.Mat16[15] - m_MatRes.Mat16[12];
 
 	// Normalize it
-	Temp = (float) sqrt(m_Frustum[0][0] * m_Frustum[0][0] + m_Frustum[0][1] * m_Frustum[0][1] + m_Frustum[0][2] * m_Frustum[0][2] );
-	m_Frustum[0][0] /= Temp;
-	m_Frustum[0][1] /= Temp;
-	m_Frustum[0][2] /= Temp;
-	m_Frustum[0][3] /= Temp;
+	t = (float) sqrt(m_Frustum[0][0] * m_Frustum[0][0] + m_Frustum[0][1] * m_Frustum[0][1] + m_Frustum[0][2] * m_Frustum[0][2] );
+	m_Frustum[0][0] /= t;
+	m_Frustum[0][1] /= t;
+	m_Frustum[0][2] /= t;
+	m_Frustum[0][3] /= t;
 
-	// Extract the LEFT clipping plane
-	m_Frustum[1][0] = m_MatRes.Mat[M03] + m_MatRes.Mat[M00];
-	m_Frustum[1][1] = m_MatRes.Mat[M13] + m_MatRes.Mat[M10];
-	m_Frustum[1][2] = m_MatRes.Mat[M23] + m_MatRes.Mat[M20];
-	m_Frustum[1][3] = m_MatRes.Mat[M33] + m_MatRes.Mat[M30];
-
-	// Normalize it
-	Temp = (float) sqrt(m_Frustum[1][0] * m_Frustum[1][0] + m_Frustum[1][1] * m_Frustum[1][1] + m_Frustum[1][2] * m_Frustum[1][2] );
-	m_Frustum[1][0] /= Temp;
-	m_Frustum[1][1] /= Temp;
-	m_Frustum[1][2] /= Temp;
-	m_Frustum[1][3] /= Temp;
-
-	// Extract the BOTTOM clipping plane
-	m_Frustum[2][0] = m_MatRes.Mat[M03] + m_MatRes.Mat[M01];
-	m_Frustum[2][1] = m_MatRes.Mat[M13] + m_MatRes.Mat[M11];
-	m_Frustum[2][2] = m_MatRes.Mat[M23] + m_MatRes.Mat[M21];
-	m_Frustum[2][3] = m_MatRes.Mat[M33] + m_MatRes.Mat[M31];
+	// Extract the LEFT mRes.Mat16ping plane
+	m_Frustum[1][0] = m_MatRes.Mat16[ 3] + m_MatRes.Mat16[ 0];
+	m_Frustum[1][1] = m_MatRes.Mat16[ 7] + m_MatRes.Mat16[ 4];
+	m_Frustum[1][2] = m_MatRes.Mat16[11] + m_MatRes.Mat16[ 8];
+	m_Frustum[1][3] = m_MatRes.Mat16[15] + m_MatRes.Mat16[12];
 
 	// Normalize it
-	Temp = (float) sqrt(m_Frustum[2][0] * m_Frustum[2][0] + m_Frustum[2][1] * m_Frustum[2][1] + m_Frustum[2][2] * m_Frustum[2][2] );
-	m_Frustum[2][0] /= Temp;
-	m_Frustum[2][1] /= Temp;
-	m_Frustum[2][2] /= Temp;
-	m_Frustum[2][3] /= Temp;
+	t = (float) sqrt(m_Frustum[1][0] * m_Frustum[1][0] + m_Frustum[1][1] * m_Frustum[1][1] + m_Frustum[1][2] * m_Frustum[1][2] );
+	m_Frustum[1][0] /= t;
+	m_Frustum[1][1] /= t;
+	m_Frustum[1][2] /= t;
+	m_Frustum[1][3] /= t;
 
-	// Extract the TOP clipping plane
-	m_Frustum[3][0] = m_MatRes.Mat[M03] - m_MatRes.Mat[M01];
-	m_Frustum[3][1] = m_MatRes.Mat[M13] - m_MatRes.Mat[M11];
-	m_Frustum[3][2] = m_MatRes.Mat[M23] - m_MatRes.Mat[M21];
-	m_Frustum[3][3] = m_MatRes.Mat[M33] - m_MatRes.Mat[M31];
-
-	// Normalize it
-	Temp = (float) sqrt(m_Frustum[3][0] * m_Frustum[3][0] + m_Frustum[3][1] * m_Frustum[3][1] + m_Frustum[3][2] * m_Frustum[3][2] );
-	m_Frustum[3][0] /= Temp;
-	m_Frustum[3][1] /= Temp;
-	m_Frustum[3][2] /= Temp;
-	m_Frustum[3][3] /= Temp;
-
-	// Extract the FAR clipping plane
-	m_Frustum[4][0] = m_MatRes.Mat[M03] - m_MatRes.Mat[M02];
-	m_Frustum[4][1] = m_MatRes.Mat[M13] - m_MatRes.Mat[M12];
-	m_Frustum[4][2] = m_MatRes.Mat[M23] - m_MatRes.Mat[M22];
-	m_Frustum[4][3] = m_MatRes.Mat[M33] - m_MatRes.Mat[M32];
+	// Extract the BOTTOM mRes.Mat16ping plane
+	m_Frustum[2][0] = m_MatRes.Mat16[ 3] + m_MatRes.Mat16[ 1];
+	m_Frustum[2][1] = m_MatRes.Mat16[ 7] + m_MatRes.Mat16[ 5];
+	m_Frustum[2][2] = m_MatRes.Mat16[11] + m_MatRes.Mat16[ 9];
+	m_Frustum[2][3] = m_MatRes.Mat16[15] + m_MatRes.Mat16[13];
 
 	// Normalize it
-	Temp = (float) sqrt(m_Frustum[4][0] * m_Frustum[4][0] + m_Frustum[4][1] * m_Frustum[4][1] + m_Frustum[4][2] * m_Frustum[4][2] );
-	m_Frustum[4][0] /= Temp;
-	m_Frustum[4][1] /= Temp;
-	m_Frustum[4][2] /= Temp;
-	m_Frustum[4][3] /= Temp;
+	t = (float) sqrt(m_Frustum[2][0] * m_Frustum[2][0] + m_Frustum[2][1] * m_Frustum[2][1] + m_Frustum[2][2] * m_Frustum[2][2] );
+	m_Frustum[2][0] /= t;
+	m_Frustum[2][1] /= t;
+	m_Frustum[2][2] /= t;
+	m_Frustum[2][3] /= t;
 
-	// Extract the NEAR clipping plane.  This is last on purpose (see pointinfrustum() for reason)
-	m_Frustum[5][0] = m_MatRes.Mat[M03] + m_MatRes.Mat[M02];
-	m_Frustum[5][1] = m_MatRes.Mat[M13] + m_MatRes.Mat[M12];
-	m_Frustum[5][2] = m_MatRes.Mat[M23] + m_MatRes.Mat[M22];
-	m_Frustum[5][3] = m_MatRes.Mat[M33] + m_MatRes.Mat[M32];
+	// Extract the TOP mRes.Mat16ping plane
+	m_Frustum[3][0] = m_MatRes.Mat16[ 3] - m_MatRes.Mat16[ 1];
+	m_Frustum[3][1] = m_MatRes.Mat16[ 7] - m_MatRes.Mat16[ 5];
+	m_Frustum[3][2] = m_MatRes.Mat16[11] - m_MatRes.Mat16[ 9];
+	m_Frustum[3][3] = m_MatRes.Mat16[15] - m_MatRes.Mat16[13];
 
 	// Normalize it
-	Temp = (float) sqrt(m_Frustum[5][0] * m_Frustum[5][0] + m_Frustum[5][1] * m_Frustum[5][1] + m_Frustum[5][2] * m_Frustum[5][2] );
-	m_Frustum[5][0] /= Temp;
-	m_Frustum[5][1] /= Temp;
-	m_Frustum[5][2] /= Temp;
-	m_Frustum[5][3] /= Temp;
-}
+	t = (float) sqrt(m_Frustum[3][0] * m_Frustum[3][0] + m_Frustum[3][1] * m_Frustum[3][1] + m_Frustum[3][2] * m_Frustum[3][2] );
+	m_Frustum[3][0] /= t;
+	m_Frustum[3][1] /= t;
+	m_Frustum[3][2] /= t;
+	m_Frustum[3][3] /= t;
 
-//***************************************************
-//Функция используется для рассечения треугольника
-//ближней плоскостью отсечения
-//***************************************************
-vector4 CMeshManager::Calc_Edge(vector4& VecIn1, vector4& VecIn2)
-{
-	//вершина перед передней плоскостью Vec1
-	//вершина за передней проскостью Vec2
+	// Extract the FAR mRes.Mat16ping plane
+	m_Frustum[4][0] = m_MatRes.Mat16[ 3] - m_MatRes.Mat16[ 2];
+	m_Frustum[4][1] = m_MatRes.Mat16[ 7] - m_MatRes.Mat16[ 6];
+	m_Frustum[4][2] = m_MatRes.Mat16[11] - m_MatRes.Mat16[10];
+	m_Frustum[4][3] = m_MatRes.Mat16[15] - m_MatRes.Mat16[14];
 
-	vector4 VecOut;
+	// Normalize it
+	t = (float) sqrt(m_Frustum[4][0] * m_Frustum[4][0] + m_Frustum[4][1] * m_Frustum[4][1] + m_Frustum[4][2] * m_Frustum[4][2] );
+	m_Frustum[4][0] /= t;
+	m_Frustum[4][1] /= t;
+	m_Frustum[4][2] /= t;
+	m_Frustum[4][3] /= t;
 
-	float d = VecIn1.z / (VecIn1.z - VecIn2.z);
+	// Extract the NEAR mRes.Mat16ping plane.  This is last on purpose (see pointinfrustum() for reason)
+	m_Frustum[5][0] = m_MatRes.Mat16[ 3] + m_MatRes.Mat16[ 2];
+	m_Frustum[5][1] = m_MatRes.Mat16[ 7] + m_MatRes.Mat16[ 6];
+	m_Frustum[5][2] = m_MatRes.Mat16[11] + m_MatRes.Mat16[10];
+	m_Frustum[5][3] = m_MatRes.Mat16[15] + m_MatRes.Mat16[14];
 
-	VecOut.x = (VecIn2.x - VecIn1.x) * d + VecIn1.x;
-	VecOut.y = (VecIn2.y - VecIn1.y) * d + VecIn1.y;
-	VecOut.z = m_ZNear + 0.05f;
-
-	VecOut.tu = (VecIn2.tu - VecIn1.tu) * d + VecIn1.tu;
-	VecOut.tv = (VecIn2.tv - VecIn1.tv) * d + VecIn1.tv;
-
-	return VecOut;
+	// Normalize it
+	t = (float) sqrt(m_Frustum[5][0] * m_Frustum[5][0] + m_Frustum[5][1] * m_Frustum[5][1] + m_Frustum[5][2] * m_Frustum[5][2] );
+	m_Frustum[5][0] /= t;
+	m_Frustum[5][1] /= t;
+	m_Frustum[5][2] /= t;
+	m_Frustum[5][3] /= t;
 }
 
 //***********************************************
-//Функция трансформирует BSP дерево (умножение
-//на матрицы мира, вида, проекции и т.п.)
+//Р¤СѓРЅРєС†РёСЏ С‚СЂР°РЅСЃС„РѕСЂРјРёСЂСѓРµС‚ BSP РґРµСЂРµРІРѕ (СѓРјРЅРѕР¶РµРЅРёРµ
+//РЅР° РјР°С‚СЂРёС†С‹ РјРёСЂР°, РІРёРґР°, РїСЂРѕРµРєС†РёРё Рё С‚.Рї.)
 //***********************************************
 void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 {
 	if(!Tree)
 		return;
 
-	//обнуляем список транформированных полигонов
-	//для следующего кадра - например в этом кадре
-	//камера переместилась
-	if(Tree->TransformedPolygons.PolyList != NULL)
-	 {
-		 Tree->TransformedPolygons.PolygonCount = 0;
-		 free(Tree->TransformedPolygons.PolyList);
-		 Tree->TransformedPolygons.PolyList = NULL;
-	}
+	//РѕР±РЅСѓР»СЏРµРј СЃРїРёСЃРѕРє С‚СЂР°РЅС„РѕСЂРјРёСЂРѕРІР°РЅРЅС‹С… РїРѕР»РёРіРѕРЅРѕРІ
+	//РґР»СЏ СЃР»РµРґСѓСЋС‰РµРіРѕ РєР°РґСЂР° - РЅР°РїСЂРёРјРµСЂ РІ СЌС‚РѕРј РєР°РґСЂРµ
+	//РєР°РјРµСЂР° РїРµСЂРµРјРµСЃС‚РёР»Р°СЃСЊ
+	Tree->TransformedPolygons.Reset();
 
-	//извлекаем плоскости отсечения из пирамиды просмотра
+	//РёР·РІР»РµРєР°РµРј РїР»РѕСЃРєРѕСЃС‚Рё РѕС‚СЃРµС‡РµРЅРёСЏ РёР· РїРёСЂР°РјРёРґС‹ РїСЂРѕСЃРјРѕС‚СЂР°
 	Extract_Frustum();
 
-	//в цикле перебираем все полигоны в списке
-	//и трансформируем их - умножение на матрицы
-	//вида, мира, отбрасывание задних поверхностей,
-	//отсечение по передней плоскости просмотра
-	//матрица проекции, деление на z, экранные координаты
-	//заносим полигон в список трансформированных полигонов
-	for ( UINT j = 0; j < Tree->Polygons.PolygonCount; j++)
+	//РІ С†РёРєР»Рµ РїРµСЂРµР±РёСЂР°РµРј РІСЃРµ РїРѕР»РёРіРѕРЅС‹ РІ СЃРїРёСЃРєРµ
+	//Рё С‚СЂР°РЅСЃС„РѕСЂРјРёСЂСѓРµРј РёС… - СѓРјРЅРѕР¶РµРЅРёРµ РЅР° РјР°С‚СЂРёС†С‹
+	//РІРёРґР°, РјРёСЂР°, РѕС‚Р±СЂР°СЃС‹РІР°РЅРёРµ Р·Р°РґРЅРёС… РїРѕРІРµСЂС…РЅРѕСЃС‚РµР№,
+	//РѕС‚СЃРµС‡РµРЅРёРµ РїРѕ РїРµСЂРµРґРЅРµР№ РїР»РѕСЃРєРѕСЃС‚Рё РїСЂРѕСЃРјРѕС‚СЂР°
+	//РјР°С‚СЂРёС†Р° РїСЂРѕРµРєС†РёРё, РґРµР»РµРЅРёРµ РЅР° z, СЌРєСЂР°РЅРЅС‹Рµ РєРѕРѕСЂРґРёРЅР°С‚С‹
+	//Р·Р°РЅРѕСЃРёРј РїРѕР»РёРіРѕРЅ РІ СЃРїРёСЃРѕРє С‚СЂР°РЅСЃС„РѕСЂРјРёСЂРѕРІР°РЅРЅС‹С… РїРѕР»РёРіРѕРЅРѕРІ
+	for ( int j = 0; j < Tree->Polygons.PolygonCount; j++)
 	 {
 		 
-		//плоскости отсечения извлекли и 
-		//если полигон вне пирамиды просотра
-		//отбрасываем его - не рисуем, переходим
-		//к следующему полигону
+		//РїР»РѕСЃРєРѕСЃС‚Рё РѕС‚СЃРµС‡РµРЅРёСЏ РёР·РІР»РµРєР»Рё Рё 
+		//РµСЃР»Рё РїРѕР»РёРіРѕРЅ РІРЅРµ РїРёСЂР°РјРёРґС‹ РїСЂРѕСЃРѕС‚СЂР°
+		//РѕС‚Р±СЂР°СЃС‹РІР°РµРј РµРіРѕ - РЅРµ СЂРёСЃСѓРµРј, РїРµСЂРµС…РѕРґРёРј
+		//Рє СЃР»РµРґСѓСЋС‰РµРјСѓ РїРѕР»РёРіРѕРЅСѓ
 		if (!Polygon_In_Frustum(3, Tree->Polygons.PolyList[j].Vertex))
 			continue;
 
-		//если полигон прошел тест на объем просмотра
-		//получаем вершины из списка
+		//РµСЃР»Рё РїРѕР»РёРіРѕРЅ РїСЂРѕС€РµР» С‚РµСЃС‚ РЅР° РѕР±СЉРµРј РїСЂРѕСЃРјРѕС‚СЂР°
+		//РїРѕР»СѓС‡Р°РµРј РІРµСЂС€РёРЅС‹ РёР· СЃРїРёСЃРєР° РїРѕР»РёРіРѕРЅРѕРІ (РёСЃС…РѕРґРЅС‹Р№ РјР°СЃСЃРёРІ)
 		vector4 Vec1 = Tree->Polygons.PolyList[j].Vertex[0];
 		vector4 Vec2 = Tree->Polygons.PolyList[j].Vertex[1];
 		vector4 Vec3 = Tree->Polygons.PolyList[j].Vertex[2];
-
-		//умножаем вершины на матрицу мира
+		
+		//СѓРјРЅРѕР¶Р°РµРј РІРµСЂС€РёРЅС‹ РЅР° РјР°С‚СЂРёС†Сѓ РјРёСЂР°
 		Vec1 = Vec4_Mat4x4_Mul(Vec1, m_MatWorld);
 		Vec2 = Vec4_Mat4x4_Mul(Vec2, m_MatWorld);
 		Vec3 = Vec4_Mat4x4_Mul(Vec3, m_MatWorld);
 
-		//умножаем вершины на матрицу вида (перемещение камеры)
+		//СѓРјРЅРѕР¶Р°РµРј РІРµСЂС€РёРЅС‹ РЅР° РјР°С‚СЂРёС†Сѓ РІРёРґР° (РїРµСЂРµРјРµС‰РµРЅРёРµ РєР°РјРµСЂС‹)
 		Vec1 = Vec4_Mat4x4_Mul(Vec1, m_MatView);
 		Vec2 = Vec4_Mat4x4_Mul(Vec2, m_MatView);
 		Vec3 = Vec4_Mat4x4_Mul(Vec3, m_MatView);
-		
+
 		//backface culling
-		//отбрасывание задних поверхностей
+		//РѕС‚Р±СЂР°СЃС‹РІР°РЅРёРµ Р·Р°РґРЅРёС… РїРѕРІРµСЂС…РЅРѕСЃС‚РµР№
 		//vector subtract
 		vector4 VecEdge1 = Vec2 - Vec1;
 		vector4 VecEdge2 = Vec3 - Vec1;
@@ -1589,33 +1687,33 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 		VecEdge1 = Vec4_Normalize(VecEdge1);
 		VecEdge2 = Vec4_Normalize(VecEdge2);
 
+		//vector cross
 		vector4 VecCross = Vec4_Cross(VecEdge1, VecEdge2);
 		VecCross = Vec4_Normalize(VecCross);
 
-		//Vec0 в пространстве вида
 		//vector dot
-		float Dot = Vec4_Dot(VecCross, Vec1);
+		float Dot = VecCross | Vec1;
 
-		//если cos от 0 до 90 градусов
-		//отбрасываем полигон - не рисуем
-		//переходим к следующему полигону
+		//РµСЃР»Рё cos РѕС‚ 0 РґРѕ 90 РіСЂР°РґСѓСЃРѕРІ
+		//РѕС‚Р±СЂР°СЃС‹РІР°РµРј РїРѕР»РёРіРѕРЅ - РЅРµ СЂРёСЃСѓРµРј
+		//РїРµСЂРµС…РѕРґРёРј Рє СЃР»РµРґСѓСЋС‰РµРјСѓ РїРѕР»РёРіРѕРЅСѓ
 		if (Dot >= 0.0)
 			continue;
 		
-		//если полигон прошел тест на backface culling
-		//начинаем отсечение по передней плоскости
-		//отсечение производится в пространстве вида
-		//в результате отсечения накапливаем новые
-		//треугольники в FrontList
-		//FrontList может содержать один или два треугольника
-		//получившихся после отсечения передней плоскостью
-		//отсечения, либо один исходный треугольник
-		//если небыло отсечения
+		//РµСЃР»Рё РїРѕР»РёРіРѕРЅ РїСЂРѕС€РµР» С‚РµСЃС‚ РЅР° backface culling
+		//РЅР°С‡РёРЅР°РµРј РѕС‚СЃРµС‡РµРЅРёРµ РїРѕ РїРµСЂРµРґРЅРµР№ РїР»РѕСЃРєРѕСЃС‚Рё
+		//РѕС‚СЃРµС‡РµРЅРёРµ РїСЂРѕРёР·РІРѕРґРёС‚СЃСЏ РІ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµ РІРёРґР°
+		//РІ СЂРµР·СѓР»СЊС‚Р°С‚Рµ РѕС‚СЃРµС‡РµРЅРёСЏ РЅР°РєР°РїР»РёРІР°РµРј РЅРѕРІС‹Рµ
+		//С‚СЂРµСѓРіРѕР»СЊРЅРёРєРё РІ FrontList
+		//FrontList РјРѕР¶РµС‚ СЃРѕРґРµСЂР¶Р°С‚СЊ РѕРґРёРЅ РёР»Рё РґРІР° С‚СЂРµСѓРіРѕР»СЊРЅРёРєР°
+		//РїРѕР»СѓС‡РёРІС€РёС…СЃСЏ РїРѕСЃР»Рµ РѕС‚СЃРµС‡РµРЅРёСЏ РїРµСЂРµРґРЅРµР№ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		//РѕС‚СЃРµС‡РµРЅРёСЏ, Р»РёР±Рѕ РѕРґРёРЅ РёСЃС…РѕРґРЅС‹Р№ С‚СЂРµСѓРіРѕР»СЊРЅРёРє
+		//РµСЃР»Рё РЅРµР±С‹Р»Рѕ РѕС‚СЃРµС‡РµРЅРёСЏ
 		
 		list FrontList;
 
-		//все три вершины перед плоскостью
-		if( (Vec1.z > 0) && (Vec2.z > 0) && (Vec3.z > 0) )
+		//РІСЃРµ С‚СЂРё РІРµСЂС€РёРЅС‹ РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z > m_ZNear) && (Vec2.z > m_ZNear) && (Vec3.z > m_ZNear) )
 		{
 			polygon Poly;
 
@@ -1628,14 +1726,15 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			FrontList.Add_To_List(&Poly);
 		}
 
-		//вариант 1 - Vec0 за плоскостью Vec1, Vec2 перед плоскостью
-		if( (Vec1.z < 0) && (Vec2.z > 0) && (Vec3.z > 0) )
+		//РІР°СЂРёР°РЅС‚ 1 - Vec1 Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ Vec2, Vec3 РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z < m_ZNear) && (Vec2.z > m_ZNear) && (Vec3.z > m_ZNear) )
 		{
-			// Vec0 -> Vec1
-			// Vec0 -> Vec2
+			// Vec1 -> Vec2
+			// Vec1 -> Vec3
 
 			vector4 vt0 = Calc_Edge(Vec2, Vec1);
 			vector4 vt1 = Calc_Edge(Vec3, Vec1);
+
 			
 			polygon Poly;
 
@@ -1656,11 +1755,11 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			FrontList.Add_To_List(&Poly);
 		}
 
-		//вариант 2 - Vec1 за плоскостью, Vec0, Vec2 перед плоскостью
-		if( (Vec1.z > 0) && (Vec2.z < 0) && (Vec3.z > 0 ) )
+		//РІР°СЂРёР°РЅС‚ 2 - Vec2 Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ, Vec1, Vec3 РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z > m_ZNear) && (Vec2.z < m_ZNear) && (Vec3.z > m_ZNear ) )
 		{
-			// Vec1 -> Vec2
-			// Vec1 -> Vec0
+			// Vec2 -> Vec3
+			// Vec2 -> Vec1
 			vector4 vt0 = Calc_Edge(Vec3, Vec2);
 			vector4 vt1 = Calc_Edge(Vec1, Vec2);
 
@@ -1683,11 +1782,11 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			FrontList.Add_To_List(&Poly);
 		}
 
-		//вариант 3 - Vec2 за плоскостью, Vec0, Vec1 перед плоскостью
-		if( (Vec1.z > 0) && (Vec2.z > 0) && (Vec3.z < 0 ) )
+		//РІР°СЂРёР°РЅС‚ 3 - Vec3 Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ, Vec1, Vec2 РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z > m_ZNear) && (Vec2.z > m_ZNear) && (Vec3.z < m_ZNear ) )
 		{
-			// Vec2 -> Vec0
-			// Vec2 -> Vec1
+			// Vec3 -> Vec1
+			// Vec3 -> Vec2
 			vector4 vt0 = Calc_Edge(Vec1, Vec3);
 			vector4 vt1 = Calc_Edge(Vec2, Vec3);
 
@@ -1710,11 +1809,11 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			FrontList.Add_To_List(&Poly);
 		}
 
-		//вариант 4 - Vec0, Vec1 за плоскостью, Vec2 перед плоскостью
-		if( (Vec1.z < 0) && (Vec2.z < 0) && (Vec3.z > 0 ) )
+		//РІР°СЂРёР°РЅС‚ 4 - Vec1, Vec2 Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ, Vec3 РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z < m_ZNear) && (Vec2.z < m_ZNear) && (Vec3.z > m_ZNear ) )
 		{
-			// Vec1 -> Vec2
-			// Vec0 -> Vec2
+			// Vec2 -> Vec3
+			// Vec1 -> Vec3
 			vector4 vt0 = Calc_Edge(Vec3, Vec2);
 			vector4 vt1 = Calc_Edge(Vec3, Vec1);
 
@@ -1727,13 +1826,14 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			Poly.TexID = Tree->Polygons.PolyList[j].TexID; 
 
 			FrontList.Add_To_List(&Poly);
+
 		}
 
-		//вариант 5 - Vec0, Vec2 за плоскостью, Vec1 перед плоскостью
-		if( (Vec1.z < 0) && (Vec2.z > 0) && (Vec3.z < 0 ) )
+		//РІР°СЂРёР°РЅС‚ 5 - Vec1, Vec3 Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ, Vec2 РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z < m_ZNear) && (Vec2.z > m_ZNear) && (Vec3.z < m_ZNear ) )
 		{
-			// Vec0 -> Vec1
-			// Vec2 -> Vec1
+			// Vec1 -> Vec2
+			// Vec3 -> Vec2
 			vector4 vt0 = Calc_Edge(Vec2, Vec1);
 			vector4 vt1 = Calc_Edge(Vec2, Vec3);
 
@@ -1746,13 +1846,14 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			Poly.TexID = Tree->Polygons.PolyList[j].TexID; 
 
 			FrontList.Add_To_List(&Poly);
+
 		}
 
-		//вариант 6 - Vec1, Vec2 за плоскостью, Vec0 перед плоскостью
-		if( (Vec1.z > 0) && (Vec2.z < 0) && (Vec3.z < 0 ) )
+		//РІР°СЂРёР°РЅС‚ 6 - Vec2, Vec3 Р·Р° РїР»РѕСЃРєРѕСЃС‚СЊСЋ, Vec1 РїРµСЂРµРґ РїР»РѕСЃРєРѕСЃС‚СЊСЋ
+		if( (Vec1.z > m_ZNear) && (Vec2.z < m_ZNear) && (Vec3.z < m_ZNear ) )
 		{
-			// Vec2 -> Vec0
-			// Vec1 -> Vec0
+			// Vec3 -> Vec1
+			// Vec2 -> Vec1
 			vector4 vt0 = Calc_Edge(Vec1, Vec3);
 			vector4 vt1 = Calc_Edge(Vec1, Vec2);
 
@@ -1765,17 +1866,18 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			Poly.TexID = Tree->Polygons.PolyList[j].TexID; 
 
 			FrontList.Add_To_List(&Poly);
+
 		}
 		
-		//отсечение в пространстве вида сделано
-		//можно дальше трансформировать вершины
-		//умножаем вершины на матрицу проекции
-		//и далее деление на z, и экранные координаты
-		//список полигонов FrontList может содержать
-		//либо один либо два полигона получившихся после
-		//отсечения передней плоскостью отсечения, или
-		//если небыло отсечения один полигон
-		for ( UINT i = 0; i < FrontList.PolygonCount; i++)
+		//РѕС‚СЃРµС‡РµРЅРёРµ РІ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµ РІРёРґР° СЃРґРµР»Р°РЅРѕ
+		//РјРѕР¶РЅРѕ РґР°Р»СЊС€Рµ С‚СЂР°РЅСЃС„РѕСЂРјРёСЂРѕРІР°С‚СЊ РІРµСЂС€РёРЅС‹
+		//СѓРјРЅРѕР¶Р°РµРј РІРµСЂС€РёРЅС‹ РЅР° РјР°С‚СЂРёС†Сѓ РїСЂРѕРµРєС†РёРё
+		//Рё РґР°Р»РµРµ РґРµР»РµРЅРёРµ РЅР° z, Рё СЌРєСЂР°РЅРЅС‹Рµ РєРѕРѕСЂРґРёРЅР°С‚С‹
+		//СЃРїРёСЃРѕРє РїРѕР»РёРіРѕРЅРѕРІ FrontList РјРѕР¶РµС‚ СЃРѕРґРµСЂР¶Р°С‚СЊ
+		//Р»РёР±Рѕ РѕРґРёРЅ Р»РёР±Рѕ РґРІР° РїРѕР»РёРіРѕРЅР° РїРѕР»СѓС‡РёРІС€РёС…СЃСЏ РїРѕСЃР»Рµ
+		//РѕС‚СЃРµС‡РµРЅРёСЏ РїРµСЂРµРґРЅРµР№ РїР»РѕСЃРєРѕСЃС‚СЊСЋ РѕС‚СЃРµС‡РµРЅРёСЏ, РёР»Рё
+		//РµСЃР»Рё РЅРµР±С‹Р»Рѕ РѕС‚СЃРµС‡РµРЅРёСЏ РѕРґРёРЅ РїРѕР»РёРіРѕРЅ
+		for ( int i = 0; i < FrontList.PolygonCount; i++)
 		{
 			vector4 Vec1, Vec2, Vec3;
 
@@ -1783,24 +1885,25 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			Vec2 = FrontList.PolyList[i].Vertex[1];
 			Vec3 = FrontList.PolyList[i].Vertex[2];
 
-			//умножаем вершины на матрицу проекции
+			//СѓРјРЅРѕР¶Р°РµРј РІРµСЂС€РёРЅС‹ РЅР° РјР°С‚СЂРёС†Сѓ РїСЂРѕРµРєС†РёРё
 			Vec1 = Vec4_Mat4x4_Mul(Vec1, m_MatProj);
 			Vec2 = Vec4_Mat4x4_Mul(Vec2, m_MatProj);
 			Vec3 = Vec4_Mat4x4_Mul(Vec3, m_MatProj);
-
-			//после умножения вершин на матрицу проекции
-			//деление на z
+			
+			//РїРѕСЃР»Рµ СѓРјРЅРѕР¶РµРЅРёСЏ РІРµСЂС€РёРЅ РЅР° РјР°С‚СЂРёС†Сѓ РїСЂРѕРµРєС†РёРё
+			//Р·РЅР°С‡РµРЅРёРµ w СЃРѕРґРµСЂР¶РёС‚ z
+			//РґРµР»РµРЅРёРµ РЅР° z
 			Vec1.x = Vec1.x / Vec1.w;
 			Vec1.y = Vec1.y / Vec1.w;
-
+			
 			Vec2.x = Vec2.x / Vec2.w;
 			Vec2.y = Vec2.y / Vec2.w;
 
 			Vec3.x = Vec3.x / Vec3.w;
 			Vec3.y = Vec3.y / Vec3.w;
 
-			//после деления на z
-			//преобразование вершин в экранные координаты
+			//РїРѕСЃР»Рµ РґРµР»РµРЅРёСЏ РЅР° z
+			//РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ РІРµСЂС€РёРЅ РІ СЌРєСЂР°РЅРЅС‹Рµ РєРѕРѕСЂРґРёРЅР°С‚С‹
 			Vec1.x = Vec1.x * m_ViewWidth / 2.0f + m_ViewWidth / 2.0f;
 			Vec1.y = -Vec1.y * m_ViewHeight / 2.0f + m_ViewHeight / 2.0f;
 
@@ -1810,37 +1913,209 @@ void CMeshManager::Transform_BSP_Tree (BSP_tree *Tree)
 			Vec3.x = Vec3.x * m_ViewWidth / 2.0f + m_ViewWidth / 2.0f;
 			Vec3.y = -Vec3.y * m_ViewHeight / 2.0f + m_ViewHeight / 2.0f;
 
+			//РѕС‚Р±СЂР°СЃС‹РІР°РµРј С‚СЂРµСѓРіРѕР»СЊРЅРёРєРё РєРѕС‚РѕСЂС‹Рµ РІРЅРµ СЌРєСЂР°РЅР°
+			if(Vec1.y < 0 && Vec2.y < 0 && Vec3.y < 0)
+				continue;
 
-			polygon Poly;
+			//РѕС‚Р±СЂР°СЃС‹РІР°РµРј С‚СЂРµСѓРіРѕР»СЊРЅРёРєРё РєРѕС‚РѕСЂС‹Рµ РІРЅРµ СЌРєСЂР°РЅР°
+			if(Vec1.y > m_ViewHeight && Vec2.y > m_ViewHeight && Vec3.y > m_ViewHeight)
+				continue;
 
-			Poly.TexID = FrontList.PolyList[i].TexID;
+			//РѕС‚Р±СЂР°СЃС‹РІР°РµРј С‚СЂРµСѓРіРѕР»СЊРЅРёРєРё РєРѕС‚РѕСЂС‹Рµ РІРЅРµ СЌРєСЂР°РЅР°
+			if(Vec1.x < 0 && Vec2.x < 0 && Vec3.x < 0)
+				continue;
 
-			Poly.Vertex[0] = Vec1;
-			Poly.Vertex[1] = Vec2;
-			Poly.Vertex[2] = Vec3;
+			//РѕС‚Р±СЂР°СЃС‹РІР°РµРј С‚СЂРµСѓРіРѕР»СЊРЅРёРєРё РєРѕС‚РѕСЂС‹Рµ РІРЅРµ СЌРєСЂР°РЅР°
+			if(Vec1.x > m_ViewWidth && Vec2.x > m_ViewWidth && Vec3.x > m_ViewWidth)
+				continue;
 
-			//добавляем трансформированный полигон
-			//в список трансформированных полигонов
-			Tree->TransformedPolygons.Add_To_List(&Poly);
+			//РµСЃР»Рё С…РѕС‚СЊ РѕРґРЅР° РІРµСЂС€РёРЅР° РІС‹С…РѕРґРёС‚ Р·Р° РіСЂР°РЅРёС†С‹ СЌРєСЂР°РЅР° РґРµР»Р°РµРј
+			//РєР»РёРїРїРёРЅРі РІ СЌРєСЂР°РЅРЅС‹С… РєРѕРѕСЂРґРёРЅР°С‚Р°С…
+			if(Vec1.x < 0 || Vec1.y < 0 || Vec1.x > m_ViewWidth || Vec1.y > m_ViewHeight ||
+				Vec2.x < 0 || Vec2.y < 0 || Vec2.x > m_ViewWidth || Vec2.y > m_ViewHeight ||
+				Vec3.x < 0 || Vec3.y < 0 || Vec3.x > m_ViewWidth || Vec3.y > m_ViewHeight )
+			{
+
+				vector4 Vertex[8];
+
+				memset(Vertex, 0, sizeof(vector4) * 8);
+
+				Vertex[0].x = Vec1.x;
+				Vertex[0].y = Vec1.y;
+				Vertex[0].z = Vec1.z;
+				Vertex[0].w = 1.0f / Vec1.w;
+				Vertex[0].tu = Vec1.tu * Vertex[0].w;
+				Vertex[0].tv = Vec1.tv * Vertex[0].w;
+
+				Vertex[1].x = Vec2.x;
+				Vertex[1].y = Vec2.y;
+				Vertex[1].z = Vec2.z;
+				Vertex[1].w = 1.0f / Vec2.w;
+				Vertex[1].tu = Vec2.tu * Vertex[1].w;
+				Vertex[1].tv = Vec2.tv * Vertex[1].w;
+
+				Vertex[2].x = Vec3.x;
+				Vertex[2].y = Vec3.y;
+				Vertex[2].z = Vec3.z;
+				Vertex[2].w = 1.0f / Vec3.w;
+				Vertex[2].tu = Vec3.tu * Vertex[2].w;
+				Vertex[2].tv = Vec3.tv * Vertex[2].w;
+
+				int Verts = Clip_Vertices_Screen(3, &Vertex[0]);
+
+				if(Verts == 3)
+				{
+					polygon pt1;
+					
+					pt1.Vertex[0] = Vertex[0];
+					pt1.Vertex[1] = Vertex[1];
+					pt1.Vertex[2] = Vertex[2];
+
+					pt1.TexID = FrontList.PolyList[i].TexID;
+					
+					Tree->TransformedPolygons.Add_To_List(&pt1);
+				}
+				else if(Verts == 4)
+				{
+					polygon pt1;
+					
+					pt1.Vertex[0] = Vertex[0];
+					pt1.Vertex[1] = Vertex[1];
+					pt1.Vertex[2] = Vertex[2];
+
+					pt1.TexID = FrontList.PolyList[i].TexID;
+
+					Tree->TransformedPolygons.Add_To_List(&pt1);
+
+					polygon pt2;
+
+					pt2.Vertex[0] = Vertex[0];
+					pt2.Vertex[1] = Vertex[2];
+					pt2.Vertex[2] = Vertex[3];
+
+					pt2.TexID = FrontList.PolyList[i].TexID;
+				
+					Tree->TransformedPolygons.Add_To_List(&pt2);
+				}
+				
+				else if(Verts == 5)
+				{
+					polygon pt1;
+				
+					pt1.Vertex[0] = Vertex[0];
+					pt1.Vertex[1] = Vertex[1];
+					pt1.Vertex[2] = Vertex[2];
+
+					pt1.TexID = FrontList.PolyList[i].TexID;
+
+					Tree->TransformedPolygons.Add_To_List(&pt1);
+
+					polygon pt2;
+
+					pt2.Vertex[0] = Vertex[0];
+					pt2.Vertex[1] = Vertex[2];
+					pt2.Vertex[2] = Vertex[3];
+
+					pt2.TexID = FrontList.PolyList[i].TexID;
+					
+					Tree->TransformedPolygons.Add_To_List(&pt2);
+
+					polygon pt3;
+
+					pt3.Vertex[0] = Vertex[0];
+					pt3.Vertex[1] = Vertex[3];
+					pt3.Vertex[2] = Vertex[4];
+
+					pt3.TexID = FrontList.PolyList[i].TexID;
+					
+					Tree->TransformedPolygons.Add_To_List(&pt3);
+				}
+				else if(Verts == 6)
+				{
+					polygon pt1;
+				
+					pt1.Vertex[0] = Vertex[0];
+					pt1.Vertex[1] = Vertex[1];
+					pt1.Vertex[2] = Vertex[2];
+
+					pt1.TexID = FrontList.PolyList[i].TexID;
+
+					Tree->TransformedPolygons.Add_To_List(&pt1);
+
+					polygon pt2;
+
+					pt2.Vertex[0] = Vertex[0];
+					pt2.Vertex[1] = Vertex[2];
+					pt2.Vertex[2] = Vertex[3];
+
+					pt2.TexID = FrontList.PolyList[i].TexID;
+					
+					Tree->TransformedPolygons.Add_To_List(&pt2);
+
+					polygon pt3;
+
+					pt3.Vertex[0] = Vertex[0];
+					pt3.Vertex[1] = Vertex[3];
+					pt3.Vertex[2] = Vertex[4];
+
+					pt3.TexID = FrontList.PolyList[i].TexID;
+					
+					Tree->TransformedPolygons.Add_To_List(&pt3);
+
+					polygon pt4;
+
+					pt4.Vertex[0] = Vertex[0];
+					pt4.Vertex[1] = Vertex[4];
+					pt4.Vertex[2] = Vertex[5];
+
+					pt4.TexID = FrontList.PolyList[i].TexID;
+					
+					Tree->TransformedPolygons.Add_To_List(&pt4);
+				}
+			}
+			else
+			{
+				polygon pt;
+				
+				pt.Vertex[0].x = Vec1.x;
+				pt.Vertex[0].y = Vec1.y;
+				pt.Vertex[0].z = Vec1.z;
+				pt.Vertex[0].w = 1.0f / Vec1.w;
+				pt.Vertex[0].tu = Vec1.tu * pt.Vertex[0].w;
+				pt.Vertex[0].tv = Vec1.tv * pt.Vertex[0].w;
+
+				pt.Vertex[1].x = Vec2.x;
+				pt.Vertex[1].y = Vec2.y;
+				pt.Vertex[1].z = Vec2.z;
+				pt.Vertex[1].w = 1.0f / Vec2.w;
+				pt.Vertex[1].tu = Vec2.tu * pt.Vertex[1].w;
+				pt.Vertex[1].tv = Vec2.tv * pt.Vertex[1].w;
+
+				pt.Vertex[2].x = Vec3.x;
+				pt.Vertex[2].y = Vec3.y;
+				pt.Vertex[2].z = Vec3.z;
+				pt.Vertex[2].w = 1.0f / Vec3.w;
+				pt.Vertex[2].tu = Vec3.tu * pt.Vertex[2].w;
+				pt.Vertex[2].tv = Vec3.tv * pt.Vertex[2].w;
+
+				pt.TexID = FrontList.PolyList[i].TexID;
+				
+				Tree->TransformedPolygons.Add_To_List(&pt);
+
+			} //end for clipping
 		}
 
-		//очищаем список полигонов
-		if(FrontList.PolyList != NULL)
-		{
-			FrontList.PolygonCount = 0;
-			free(FrontList.PolyList);
-			FrontList.PolyList = NULL;
-		}
-
+		//РѕС‡РёС‰Р°РµРј СЃРїРёСЃРѕРє РїРѕР»РёРіРѕРЅРѕРІ
+		FrontList.Reset();
 	}
 
-	//рекурсивно трансформируем все дерево
+	//СЂРµРєСѓСЂСЃРёРІРЅРѕ С‚СЂР°РЅСЃС„РѕСЂРјРёСЂСѓРµРј РІСЃРµ РґРµСЂРµРІРѕ
 	Transform_BSP_Tree (Tree->Front);
 	Transform_BSP_Tree (Tree->Back);
 }
 
 //**************************************
-//Функция выводит BSP дерево на экран
+//Р¤СѓРЅРєС†РёСЏ РІС‹РІРѕРґРёС‚ BSP РґРµСЂРµРІРѕ РЅР° СЌРєСЂР°РЅ
 //**************************************
 void CMeshManager::Draw_BSP_Tree (BSP_tree *Tree, vector4 Eye)
 {
@@ -1861,9 +2136,8 @@ void CMeshManager::Draw_BSP_Tree (BSP_tree *Tree, vector4 Eye)
 		Draw_Polygon_List (Tree->TransformedPolygons);
 		Draw_BSP_Tree (Tree->Back, Eye);
 	}
-	else // Result is 0
+	else //СЂРµР·СѓР»СЊС‚Р°С‚ СЂР°РІРµРЅ 0
 	{
-		// the Eye point is on the Partition plane...
 		Draw_BSP_Tree (Tree->Front, Eye);
 		Draw_BSP_Tree (Tree->Back, Eye);
 	}
@@ -1871,7 +2145,7 @@ void CMeshManager::Draw_BSP_Tree (BSP_tree *Tree, vector4 Eye)
 }
 
 //***************************
-//Функция запускает таймер
+//Р¤СѓРЅРєС†РёСЏ Р·Р°РїСѓСЃРєР°РµС‚ С‚Р°Р№РјРµСЂ
 //***************************
 void CMeshManager::Timer_Start()
 {
@@ -1882,138 +2156,182 @@ void CMeshManager::Timer_Start()
 }
 
 //*****************************************
-//Функция возвращает время пройденное за
-//один кадр
+//Р¤СѓРЅРєС†РёСЏ РІРѕР·РІСЂР°С‰Р°РµС‚ РІСЂРµРјСЏ РїСЂРѕР№РґРµРЅРЅРѕРµ Р·Р°
+//РѕРґРёРЅ РєР°РґСЂ
 //*****************************************
 float CMeshManager::Get_Elapsed_Time()
 {
-	__int64 NowTime;
-	QueryPerformanceCounter((LARGE_INTEGER*)& NowTime);
-	m_ElapsedTime = (NowTime - m_StartTime) * m_TimeScale;
-	m_StartTime = NowTime;
+	__int64 nowTime;
+
+	QueryPerformanceCounter((LARGE_INTEGER*)& nowTime);
+	m_ElapsedTime = (nowTime - m_StartTime) * m_TimeScale;
+	m_StartTime = nowTime;
+
 	return m_ElapsedTime;
+
 }
 
 //*************************************************
-//Конструктор по умолчанию для структуры матрицы
+//РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РјР°С‚СЂРёС†С‹
 //*************************************************
 matrix4x4::matrix4x4()
 {
 };
 
 //***********************************
-//Деструктор для структуры матрицы
+//Р”РµСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РјР°С‚СЂРёС†С‹
 //***********************************
 matrix4x4::~matrix4x4()
 {
 };
 
 //******************************************
-//Конструктор с параметрами для структуры
-//матрицы
+//РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ СЃ РїР°СЂР°РјРµС‚СЂР°РјРё РґР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹
+//РјР°С‚СЂРёС†С‹
 //******************************************
-matrix4x4::matrix4x4(float ir1c1, float ir1c2, float ir1c3, float ir1c4,
-	float ir2c1, float ir2c2, float ir2c3, float ir2c4,
-	float ir3c1, float ir3c2, float ir3c3, float ir3c4,
-	float ir4c1, float ir4c2, float ir4c3, float ir4c4)
+matrix4x4::matrix4x4(float in_r1c1, float in_r1c2, float in_r1c3, float in_r1c4,
+	float in_r2c1, float in_r2c2, float in_r2c3, float in_r2c4,
+	float in_r3c1, float in_r3c2, float in_r3c3, float in_r3c4,
+	float in_r4c1, float in_r4c2, float in_r4c3, float in_r4c4)
 {
-	Mat[M00] = ir1c1; Mat[M01] = ir1c2; Mat[M02] = ir1c3; Mat[M03] = ir1c4;
-	Mat[M10] = ir2c1; Mat[M11] = ir2c2; Mat[M12] = ir2c3; Mat[M13] = ir2c4;
-	Mat[M20] = ir3c1; Mat[M21] = ir3c2; Mat[M22] = ir3c3; Mat[M23] = ir3c4;
-	Mat[M30] = ir4c1; Mat[M31] = ir4c2; Mat[M32] = ir4c3; Mat[M33] = ir4c4;
+	Mat[0][0] = in_r1c1; Mat[0][1] = in_r1c2; Mat[0][2] = in_r1c3; Mat[0][3] = in_r1c4;
+	Mat[1][0] = in_r2c1; Mat[1][1] = in_r2c2; Mat[1][2] = in_r2c3; Mat[1][3] = in_r2c4;
+	Mat[2][0] = in_r3c1; Mat[2][1] = in_r3c2; Mat[2][2] = in_r3c3; Mat[2][3] = in_r3c4;
+	Mat[3][0] = in_r4c1; Mat[3][1] = in_r4c2; Mat[3][2] = in_r4c3; Mat[3][3] = in_r4c4;
 };
 
-//******************************************
-//Функция умножает матрицу на матрицу
-//******************************************
-matrix4x4 CMeshManager::Mat4x4_Mat4x4_Mul(matrix4x4& MatIn1, matrix4x4& MatIn2)
+//***********************************************
+//РџРµСЂРµРіСЂСѓР¶РµРЅРЅС‹Р№ РѕРїРµСЂР°С‚РѕСЂ СѓРјРЅРѕР¶РµРЅРёСЏ РґРІСѓС… РјР°С‚СЂРёС†
+//***********************************************
+matrix4x4 matrix4x4::operator * (const matrix4x4 MatIn)
 {
 	matrix4x4 MatOut;
 
 	//row1 * col1
-	MatOut.Mat[M00] = MatIn1.Mat[M00] * MatIn2.Mat[M00] + MatIn1.Mat[M01] * MatIn2.Mat[M10] + MatIn1.Mat[M02] * MatIn2.Mat[M20] + MatIn1.Mat[M03] * MatIn2.Mat[M30];
+	MatOut.Mat[0][0] = Mat[0][0] * MatIn.Mat[0][0] + Mat[0][1] * MatIn.Mat[1][0] + Mat[0][2] * MatIn.Mat[2][0] + Mat[0][3] * MatIn.Mat[3][0];
 	//row1 * col2
-	MatOut.Mat[M01] = MatIn1.Mat[M00] * MatIn2.Mat[M01] + MatIn1.Mat[M01] * MatIn2.Mat[M11] + MatIn1.Mat[M02] * MatIn2.Mat[M21] + MatIn1.Mat[M03] * MatIn2.Mat[M31];
+	MatOut.Mat[0][1] = Mat[0][0] * MatIn.Mat[0][1] + Mat[0][1] * MatIn.Mat[1][1] + Mat[0][2] * MatIn.Mat[2][1] + Mat[0][3] * MatIn.Mat[3][1];
 	//row1 * col3
-	MatOut.Mat[M02] = MatIn1.Mat[M00] * MatIn2.Mat[M02] + MatIn1.Mat[M01] * MatIn2.Mat[M12] + MatIn1.Mat[M02] * MatIn2.Mat[M22] + MatIn1.Mat[M03] * MatIn2.Mat[M32];
+	MatOut.Mat[0][2] = Mat[0][0] * MatIn.Mat[0][2] + Mat[0][1] * MatIn.Mat[1][2] + Mat[0][2] * MatIn.Mat[2][2] + Mat[0][3] * MatIn.Mat[3][2];
 	//row1 * col4
-	MatOut.Mat[M03] = MatIn1.Mat[M00] * MatIn2.Mat[M03] + MatIn1.Mat[M01] * MatIn2.Mat[M13] + MatIn1.Mat[M02] * MatIn2.Mat[M23] + MatIn1.Mat[M03] * MatIn2.Mat[M33];
+	MatOut.Mat[0][3] = Mat[0][0] * MatIn.Mat[0][3] + Mat[0][1] * MatIn.Mat[1][3] + Mat[0][2] * MatIn.Mat[2][3] + Mat[0][3] * MatIn.Mat[3][3];
 
+	//row2 * col1
+	MatOut.Mat[1][0] = Mat[1][0] * MatIn.Mat[0][0] + Mat[1][1] * MatIn.Mat[1][0] + Mat[1][2] * MatIn.Mat[2][0] + Mat[1][3] * MatIn.Mat[3][0];
 	//row2 * col2
-	MatOut.Mat[M10] = MatIn1.Mat[M10] * MatIn2.Mat[M00] + MatIn1.Mat[M11] * MatIn2.Mat[M10] + MatIn1.Mat[M12] * MatIn2.Mat[M20] + MatIn1.Mat[M13] * MatIn2.Mat[M30];
-	//row2 * col2
-	MatOut.Mat[M11] = MatIn1.Mat[M10] * MatIn2.Mat[M01] + MatIn1.Mat[M11] * MatIn2.Mat[M11] + MatIn1.Mat[M12] * MatIn2.Mat[M21] + MatIn1.Mat[M13] * MatIn2.Mat[M31];
+	MatOut.Mat[1][1] = Mat[1][0] * MatIn.Mat[0][1] + Mat[1][1] * MatIn.Mat[1][1] + Mat[1][2] * MatIn.Mat[2][1] + Mat[1][3] * MatIn.Mat[3][1];
 	//row2 * col3
-	MatOut.Mat[M12] = MatIn1.Mat[M10] * MatIn2.Mat[M02] + MatIn1.Mat[M11] * MatIn2.Mat[M12] + MatIn1.Mat[M12] * MatIn2.Mat[M22] + MatIn1.Mat[M13] * MatIn2.Mat[M32];
+	MatOut.Mat[1][2] = Mat[1][0] * MatIn.Mat[0][2] + Mat[1][1] * MatIn.Mat[1][2] + Mat[1][2] * MatIn.Mat[2][2] + Mat[1][3] * MatIn.Mat[3][2];
 	//row2 * col4
-	MatOut.Mat[M13] = MatIn1.Mat[M10] * MatIn2.Mat[M03] + MatIn1.Mat[M11] * MatIn2.Mat[M13] + MatIn1.Mat[M12] * MatIn2.Mat[M23] + MatIn1.Mat[M13] * MatIn2.Mat[M33];
+	MatOut.Mat[1][3] = Mat[1][0] * MatIn.Mat[0][3] + Mat[1][1] * MatIn.Mat[1][3] + Mat[1][2] * MatIn.Mat[2][3] + Mat[1][3] * MatIn.Mat[3][3];
 
 	//row3 * col1
-	MatOut.Mat[M20] = MatIn1.Mat[M20] * MatIn2.Mat[M00] + MatIn1.Mat[M21] * MatIn2.Mat[M10] + MatIn1.Mat[M22] * MatIn2.Mat[M20] + MatIn1.Mat[M23] * MatIn2.Mat[M30];
+	MatOut.Mat[2][0] = Mat[2][0] * MatIn.Mat[0][0] + Mat[2][1] * MatIn.Mat[1][0] + Mat[2][2] * MatIn.Mat[2][0] + Mat[2][3] * MatIn.Mat[3][0];
 	//row3 * col2
-	MatOut.Mat[M21] = MatIn1.Mat[M20] * MatIn2.Mat[M01] + MatIn1.Mat[M21] * MatIn2.Mat[M11] + MatIn1.Mat[M22] * MatIn2.Mat[M21] + MatIn1.Mat[M23] * MatIn2.Mat[M31];
+	MatOut.Mat[2][1] = Mat[2][0] * MatIn.Mat[0][1] + Mat[2][1] * MatIn.Mat[1][1] + Mat[2][2] * MatIn.Mat[2][1] + Mat[2][3] * MatIn.Mat[3][1];
 	//row3 * col3
-	MatOut.Mat[M22] = MatIn1.Mat[M20] * MatIn2.Mat[M02] + MatIn1.Mat[M21] * MatIn2.Mat[M12] + MatIn1.Mat[M22] * MatIn2.Mat[M22] + MatIn1.Mat[M23] * MatIn2.Mat[M32];
+	MatOut.Mat[2][2] = Mat[2][0] * MatIn.Mat[0][2] + Mat[2][1] * MatIn.Mat[1][2] + Mat[2][2] * MatIn.Mat[2][2] + Mat[2][3] * MatIn.Mat[3][2];
 	//row3 * col4
-	MatOut.Mat[M23] = MatIn1.Mat[M20] * MatIn2.Mat[M03] + MatIn1.Mat[M21] * MatIn2.Mat[M13] + MatIn1.Mat[M22] * MatIn2.Mat[M23] + MatIn1.Mat[M23] * MatIn2.Mat[M33];
+	MatOut.Mat[2][3] = Mat[2][0] * MatIn.Mat[0][3] + Mat[2][1] * MatIn.Mat[1][3] + Mat[2][2] * MatIn.Mat[2][3] + Mat[2][3] * MatIn.Mat[3][3];
 
 	//row4 * col1
-	MatOut.Mat[M30] = MatIn1.Mat[M30] * MatIn2.Mat[M00] + MatIn1.Mat[M31] * MatIn2.Mat[M10] + MatIn1.Mat[M32] * MatIn2.Mat[M20] + MatIn1.Mat[M33] * MatIn2.Mat[M30];
+	MatOut.Mat[3][0] = Mat[3][0] * MatIn.Mat[0][0] + Mat[3][1] * MatIn.Mat[1][0] + Mat[3][2] * MatIn.Mat[2][0] + Mat[3][3] * MatIn.Mat[3][0];
 	//row4 * col2
-	MatOut.Mat[M31] = MatIn1.Mat[M30] * MatIn2.Mat[M01] + MatIn1.Mat[M31] * MatIn2.Mat[M11] + MatIn1.Mat[M32] * MatIn2.Mat[M21] + MatIn1.Mat[M33] * MatIn2.Mat[M31];
+	MatOut.Mat[3][1] = Mat[3][0] * MatIn.Mat[0][1] + Mat[3][1] * MatIn.Mat[1][1] + Mat[3][2] * MatIn.Mat[2][1] + Mat[3][3] * MatIn.Mat[3][1];
 	//row4 * col3
-	MatOut.Mat[M32] = MatIn1.Mat[M30] * MatIn2.Mat[M02] + MatIn1.Mat[M31] * MatIn2.Mat[M12] + MatIn1.Mat[M32] * MatIn2.Mat[M22] + MatIn1.Mat[M33] * MatIn2.Mat[M32];
+	MatOut.Mat[3][2] = Mat[3][0] * MatIn.Mat[0][2] + Mat[3][1] * MatIn.Mat[1][2] + Mat[3][2] * MatIn.Mat[2][2] + Mat[3][3] * MatIn.Mat[3][2];
 	//row4 * col4
-	MatOut.Mat[M33] = MatIn1.Mat[M30] * MatIn2.Mat[M03] + MatIn1.Mat[M31] * MatIn2.Mat[M13] + MatIn1.Mat[M32] * MatIn2.Mat[M23] + MatIn1.Mat[M33] * MatIn2.Mat[M33];
+	MatOut.Mat[3][3] = Mat[3][0] * MatIn.Mat[0][3] + Mat[3][1] * MatIn.Mat[1][3] + Mat[3][2] * MatIn.Mat[2][3] + Mat[3][3] * MatIn.Mat[3][3];
 
 	return MatOut;
+
 }
 
-//******************************************
-//Функция умножает вектор на матрицу
-//******************************************
-vector4 CMeshManager::Vec4_Mat4x4_Mul(vector4& VecIn, matrix4x4& MatIn)
+//********************************
+//Р¤СѓРЅРєС†РёСЏ СЃРѕР·РґР°РµС‚ Р·Р°РґРЅРёР№ Р±СѓС„РµСЂ
+//********************************
+void CMeshManager::Create_Backbuffer()
 {
-	vector4 VecOut;
+	DWORD m_dwSize = m_ViewWidth * (BITS_PER_PIXEL >> 3) * m_ViewHeight;
 
-	VecOut.x =	VecIn.x * MatIn.Mat[M00] +
-				VecIn.y * MatIn.Mat[M10] +
-				VecIn.z * MatIn.Mat[M20] +
-						MatIn.Mat[M30];
+	m_Data = (LPBYTE)malloc(m_dwSize * sizeof(BYTE));
+	m_DataTemp = (LPBYTE)malloc(m_dwSize * sizeof(BYTE));
 
-	VecOut.y =	VecIn.x * MatIn.Mat[M01] +
-				VecIn.y * MatIn.Mat[M11] +
-				VecIn.z * MatIn.Mat[M21] +
-						MatIn.Mat[M31];
+	memset(&m_Bih, 0, sizeof(BITMAPINFOHEADER));
+	m_Bih.biSize = sizeof(BITMAPINFOHEADER);
+	m_Bih.biWidth = m_ViewWidth;
+	m_Bih.biHeight = m_ViewHeight;
+	m_Bih.biPlanes = 1;
+	m_Bih.biBitCount = BITS_PER_PIXEL;
+	m_Bih.biCompression = BI_RGB;
+	m_Bih.biSizeImage = m_dwSize;
 
-	VecOut.z =	VecIn.x * MatIn.Mat[M02] +
-				VecIn.y * MatIn.Mat[M12] +
-				VecIn.z * MatIn.Mat[M22] +
-						MatIn.Mat[M32];
+	m_hDD = DrawDibOpen();
 
-	VecOut.w =	VecIn.x * MatIn.Mat[M03] +
-				VecIn.y * MatIn.Mat[M13] +
-				VecIn.z * MatIn.Mat[M23] +
-						MatIn.Mat[M33];
-
-	VecOut.tu = VecIn.tu;
-	VecOut.tv = VecIn.tv;
-
-	return VecOut;
 }
 
-float CMeshManager::Vec4_Dot(vector4& VecIn1, vector4& VecIn2)
+//********************************
+//Р¤СѓРЅРєС†РёСЏ РѕС‡РёС‰Р°РµС‚ Р·Р°РґРЅРёР№ Р±СѓС„РµСЂ
+//********************************
+void CMeshManager::Clear_Backbuffer()
 {
-	return VecIn1.x * VecIn2.x + VecIn1.y * VecIn2.y + VecIn1.z * VecIn2.z;
+
+	for (UINT h = 0; h < m_ViewHeight; h++)
+	{
+		for (UINT w = 0; w < m_ViewWidth; w++)
+		{
+			int Index = h * 4 * m_ViewWidth + w * 4;
+
+			m_Data[Index + 0] = (BYTE)(255.0 * 0.3f); // blue
+			m_Data[Index + 1] = (BYTE)(255.0 * 0.125f); // green
+			m_Data[Index + 2] = 0; // red
+			m_Data[Index + 3] = 0;
+		}
+	}
 }
 
-vector4 CMeshManager::Vec4_Cross(vector4& VecIn1, vector4& VecIn2)
+//****************************************
+//Р¤СѓРЅРєС†РёСЏ РІС‹РІРѕРґРёС‚ Р·Р°РґРЅРёР№ Р±СѓС„РµСЂ РЅР° СЌРєСЂР°РЅ
+//****************************************
+void CMeshManager::Present_Backbuffer()
 {
-	vector4 VecOut;
+	//РїРµСЂРµРІРѕСЂР°С‡РёРІР°РµРј Р·Р°РґРЅРёР№ Р±СѓС„РµСЂ
+	for (UINT h = 0; h < m_ViewHeight; h++ )
+	{
+		for (UINT w = 0; w < m_ViewWidth; w++)
+		{
+			int Index = h * 4 * m_ViewWidth + w * 4;
 
-	VecOut.x = VecIn1.y * VecIn2.z - VecIn1.z * VecIn2.y;
-	VecOut.y = VecIn1.z * VecIn2.x - VecIn1.x * VecIn2.z;
-	VecOut.z = VecIn1.x * VecIn2.y - VecIn1.y * VecIn2.x;
+			BYTE b = m_Data[Index + 0]; // blue
+			BYTE g = m_Data[Index + 1]; // green
+			BYTE r = m_Data[Index + 2]; // red
+			
 
-	return VecOut;
+			int IndexTemp = (m_ViewHeight - 1 - h) * 4 * m_ViewWidth + w * 4;
+			m_DataTemp[IndexTemp + 0] = b;
+			m_DataTemp[IndexTemp + 1] = g;
+			m_DataTemp[IndexTemp + 2] = r;
+			m_DataTemp[IndexTemp + 3] = 0;
+		}
+	}
+
+	//РІС‹РІРѕРґРёРј Р·Р°РґРЅРёР№ Р±СѓС„РµСЂ РЅР° СЌРєСЂР°РЅ
+	HDC hDC = GetDC(m_hWnd);
+	DrawDibDraw(m_hDD, hDC, 0, 0, m_ViewWidth, m_ViewHeight, &m_Bih, m_DataTemp, 0, 0, m_ViewWidth, m_ViewHeight, 0);
+	ReleaseDC(m_hWnd, hDC);
+
+}
+
+//********************************
+//Р¤СѓРЅРєС†РёСЏ СѓРґР°Р»СЏРµС‚ Р·Р°РґРЅРёР№ Р±СѓС„РµСЂ
+//********************************
+void CMeshManager::Delete_Backbuffer()
+{
+	DrawDibClose(m_hDD);
+
+	free(m_Data);
+	m_Data = NULL;
+
+	free(m_DataTemp);
+	m_DataTemp = NULL;
 }
