@@ -15,3 +15,5 @@
 <img src="https://github.com/ed-kurlyak/software-rendering/blob/main/pics/Sphere_Tex.png">
 
 <img src="https://github.com/ed-kurlyak/software-rendering/blob/main/pics/Torus_Lighted.png">
+
+<img src="https://github.com/ed-kurlyak/software-rendering/blob/main/pics/Geosphere.png">
