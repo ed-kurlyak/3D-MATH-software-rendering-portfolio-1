@@ -1,4 +1,4 @@
-# software-rendering
+# 3D-MATH-software-rendering-portfolio-1
 
 <img src="https://github.com/ed-kurlyak/software-rendering/blob/main/pics/BSP_Tree_SoftRend.png">
 
